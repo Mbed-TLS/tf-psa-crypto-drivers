@@ -159,6 +159,8 @@ psa_status_t cc3xx_to_psa_err(enum cc3xx_error err)
         return PSA_ERROR_NOT_PERMITTED;
     case CC3XX_ERR_DCU_MASK_MISMATCH:
         return PSA_ERROR_NOT_PERMITTED;
+    case CC3XX_ERR_KEY_SLOT_NOT_LOCKED:
+        return PSA_ERROR_NOT_PERMITTED;
     default:
         return PSA_ERROR_HARDWARE_FAILURE;
     }
