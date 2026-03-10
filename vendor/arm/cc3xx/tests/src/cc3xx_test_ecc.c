@@ -6,12 +6,16 @@
  */
 
 #include <string.h>
-
 #include "cc3xx_test_ecc.h"
 #include "cc3xx_ec.h"
 #include "cc3xx_test_assert.h"
-
 #include "cc3xx_test_utils.h"
+
+#ifndef CC3XX_CONFIG_FILE
+#include "cc3xx_config.h"
+#else
+#include CC3XX_CONFIG_FILE
+#endif
 
 typedef struct {
     cc3xx_ec_curve_id_t curve_id;
