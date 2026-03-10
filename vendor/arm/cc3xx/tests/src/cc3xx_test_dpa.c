@@ -6,7 +6,8 @@
  */
 
 #include <string.h>
-
+#include "cc3xx_stdlib.h"
+#include "cc3xx_rng.h"
 #include "cc3xx_test_dpa.h"
 #ifndef CC3XX_CONFIG_FILE
 #include "cc3xx_config.h"

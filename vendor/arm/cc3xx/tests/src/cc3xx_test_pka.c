@@ -6,7 +6,7 @@
  */
 
 #include <string.h>
-
+#include "cc3xx_pka.h"
 #include "cc3xx_test_pka.h"
 #ifndef CC3XX_CONFIG_FILE
 #include "cc3xx_config.h"

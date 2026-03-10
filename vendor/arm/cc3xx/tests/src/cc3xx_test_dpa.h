@@ -5,11 +5,8 @@
  *
  */
 
-#ifndef CC3XX_TEST_PKA_H
-#define CC3XX_TEST_PKA_H
-
-#include "cc3xx_stdlib.h"
-#include "cc3xx_rng.h"
+#ifndef CC3XX_TEST_DPA_H
+#define CC3XX_TEST_DPA_H
 
 #include "test_framework.h"
 
@@ -23,4 +20,4 @@ void add_cc3xx_dpa_tests_to_testsuite(struct test_suite_t *p_ts, uint32_t ts_siz
 }
 #endif
 
-#endif /* CC3XX_TEST_PKA_H */
+#endif /* CC3XX_TEST_DPA_H */

@@ -5,10 +5,8 @@
  *
  */
 
-#ifndef CC3XX_TEST_PKA_H
-#define CC3XX_TEST_PKA_H
-
-#include "cc3xx_drbg.h"
+#ifndef CC3XX_TEST_DRBG_H
+#define CC3XX_TEST_DRBG_H
 
 #include "test_framework.h"
 
@@ -22,4 +20,4 @@ void add_cc3xx_drbg_tests_to_testsuite(struct test_suite_t *p_ts, uint32_t ts_si
 }
 #endif
 
-#endif /* CC3XX_TEST_PKA_H */
+#endif /* CC3XX_TEST_DRBG_H */

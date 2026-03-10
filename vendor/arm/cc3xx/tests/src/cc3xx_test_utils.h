@@ -24,7 +24,6 @@
 #define TEST_SETUP(x) TEST_ASSERT((x) == 0, "Test setup failed")
 #define TEST_TEARDOWN(x) TEST_ASSERT((x) == 0, "Test teardown failed")
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif

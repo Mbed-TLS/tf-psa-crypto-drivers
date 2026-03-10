@@ -7,6 +7,7 @@
 
 #include "cc3xx_test_rng.h"
 #include "cc3xx_noise_source.h"
+#include "cc3xx_stdlib.h"
 #include "cc3xx_rng.h"
 #include "cc3xx_dev.h"
 #ifndef CC3XX_CONFIG_FILE

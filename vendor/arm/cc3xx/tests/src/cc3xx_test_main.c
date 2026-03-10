@@ -15,6 +15,7 @@
 #include "cc3xx_test_ecdsa.h"
 #include "cc3xx_test_dpa.h"
 #include "cc3xx_test_rng.h"
+#include "cc3xx_test_drbg.h"
 
 void add_cc3xx_tests_to_testsuite(struct test_suite_t *p_ts, uint32_t ts_size)
 {

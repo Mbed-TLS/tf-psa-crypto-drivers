@@ -8,8 +8,6 @@
 #ifndef CC3XX_TEST_PKA_H
 #define CC3XX_TEST_PKA_H
 
-#include "cc3xx_pka.h"
-
 #include "test_framework.h"
 
 #ifdef __cplusplus

@@ -10,7 +10,8 @@
 
 #include <assert.h>
 
-#define cc3xx_test_assert(x) do { \
+#define cc3xx_test_assert(x) \
+    do { \
         if (!(x)) { \
             printf_set_color(RED); \
             TEST_LOG("CC3XX test assertion %s failed at %s:%d\r\n", #x, __FILE__, __LINE__); \
