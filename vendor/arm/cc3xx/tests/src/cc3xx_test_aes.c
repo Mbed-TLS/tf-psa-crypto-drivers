@@ -5,6 +5,8 @@
  *
  */
 
+#include <assert.h>
+
 #include "cc3xx_test_aes.h"
 #include "test_lowlevel_aes.h"
 #ifndef CC3XX_CONFIG_FILE
@@ -1342,12 +1344,15 @@ uint8_t *cc3xx_test_aes_get_key(cc3xx_aes_keysize_t key_size,
                                 struct aes_test_data_t *data)
 {
     switch (key_size) {
-        case CC3XX_AES_KEYSIZE_128:
-            return data->keys.aes_128;
-        case CC3XX_AES_KEYSIZE_192:
-            return data->keys.aes_192;
-        case CC3XX_AES_KEYSIZE_256:
-            return data->keys.aes_256;
+    case CC3XX_AES_KEYSIZE_128:
+        return data->keys.aes_128;
+    case CC3XX_AES_KEYSIZE_192:
+        return data->keys.aes_192;
+    case CC3XX_AES_KEYSIZE_256:
+        return data->keys.aes_256;
+    default:
+        assert(0);
+        return NULL;
     }
 
     return NULL;
@@ -1357,18 +1362,21 @@ struct aes_test_mode_data_t *cc3xx_test_aes_get_mode_data(cc3xx_aes_mode_t mode,
                                                       struct aes_test_data_t *data)
 {
     switch (mode) {
-        case CC3XX_AES_MODE_CTR:
-            return &data->modes.ctr;
-        case CC3XX_AES_MODE_ECB:
-            return &data->modes.ecb;
-        case CC3XX_AES_MODE_CBC:
-            return &data->modes.cbc;
-        case CC3XX_AES_MODE_GCM:
-            return &data->modes.gcm;
-        case CC3XX_AES_MODE_CMAC:
-            return &data->modes.cmac;
-        case CC3XX_AES_MODE_CCM:
-            return &data->modes.ccm;
+    case CC3XX_AES_MODE_CTR:
+        return &data->modes.ctr;
+    case CC3XX_AES_MODE_ECB:
+        return &data->modes.ecb;
+    case CC3XX_AES_MODE_CBC:
+        return &data->modes.cbc;
+    case CC3XX_AES_MODE_GCM:
+        return &data->modes.gcm;
+    case CC3XX_AES_MODE_CMAC:
+        return &data->modes.cmac;
+    case CC3XX_AES_MODE_CCM:
+        return &data->modes.ccm;
+    default:
+        assert(0);
+        return NULL;
     }
 
     return NULL;
@@ -1379,12 +1387,15 @@ struct aes_test_ciphertext_t *cc3xx_test_aes_get_ciphertext(
                                            struct aes_test_mode_data_t *mode_data)
 {
     switch (key_size) {
-        case CC3XX_AES_KEYSIZE_128:
-            return &mode_data->aes_128;
-        case CC3XX_AES_KEYSIZE_192:
-            return &mode_data->aes_192;
-        case CC3XX_AES_KEYSIZE_256:
-            return &mode_data->aes_256;
+    case CC3XX_AES_KEYSIZE_128:
+        return &mode_data->aes_128;
+    case CC3XX_AES_KEYSIZE_192:
+        return &mode_data->aes_192;
+    case CC3XX_AES_KEYSIZE_256:
+        return &mode_data->aes_256;
+    default:
+        assert(0);
+        return NULL;
     }
 
     return NULL;
