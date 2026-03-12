@@ -30,13 +30,13 @@
 #include <string.h>
 
 /* To be called on entry to every public function in this module */
-static void set_modulus_to_curve_modulus(cc3xx_ec_curve_t *curve)
+static void set_modulus_to_curve_modulus(const cc3xx_ec_curve_t *curve)
 {
     cc3xx_lowlevel_pka_set_modulus(curve->field_modulus, false, CC3XX_PKA_REG_NP);
 }
 
 /* To be called on exit of every public function in this module */
-static void set_modulus_to_curve_order(cc3xx_ec_curve_t *curve)
+static void set_modulus_to_curve_order(const cc3xx_ec_curve_t *curve)
 {
     cc3xx_lowlevel_pka_set_modulus(curve->order, false, CC3XX_PKA_REG_NP);
 }
@@ -50,7 +50,7 @@ static void set_modulus_to_curve_order(cc3xx_ec_curve_t *curve)
  * @return    false The modulus already contained the prime field
  *
  */
-static bool check_and_set_modulus_to_curve_modulus(cc3xx_ec_curve_t *curve)
+static bool check_and_set_modulus_to_curve_modulus(const cc3xx_ec_curve_t *curve)
 {
     const bool modulus_already_set =
         cc3xx_lowlevel_pka_are_equal(curve->field_modulus, CC3XX_PKA_REG_NP);
@@ -149,7 +149,7 @@ cc3xx_ec_point_affine cc3xx_lowlevel_ec_allocate_point(void)
     return res;
 }
 
-void cc3xx_lowlevel_ec_free_point(cc3xx_ec_point_affine *p)
+void cc3xx_lowlevel_ec_free_point(const cc3xx_ec_point_affine *p)
 {
     cc3xx_lowlevel_pka_free_reg(p->y);
     cc3xx_lowlevel_pka_free_reg(p->x);
@@ -399,7 +399,7 @@ cc3xx_err_t cc3xx_lowlevel_ec_double_point(cc3xx_ec_curve_t *curve,
 }
 
 #ifdef CC3XX_CONFIG_DPA_MITIGATIONS_ENABLE
-static cc3xx_err_t blind_scalar(cc3xx_ec_curve_t *curve, cc3xx_pka_reg_id_t scalar,
+static cc3xx_err_t blind_scalar(const cc3xx_ec_curve_t *curve, cc3xx_pka_reg_id_t scalar,
                                 cc3xx_pka_reg_id_t res)
 {
     cc3xx_err_t err;
@@ -449,7 +449,7 @@ static bool pad_scalar(cc3xx_ec_curve_t *curve, cc3xx_pka_reg_id_t scalar,
 }
 
 #ifdef CC3XX_CONFIG_DPA_MITIGATIONS_ENABLE
-static bool split_scalar(cc3xx_ec_curve_t *curve, cc3xx_pka_reg_id_t scalar,
+static bool split_scalar(const cc3xx_ec_curve_t *curve, cc3xx_pka_reg_id_t scalar,
                          cc3xx_pka_reg_id_t random, cc3xx_pka_reg_id_t quotient,
                          cc3xx_pka_reg_id_t remainder)
 {

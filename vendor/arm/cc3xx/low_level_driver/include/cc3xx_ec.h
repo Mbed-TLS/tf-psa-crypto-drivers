@@ -100,7 +100,7 @@ cc3xx_err_t cc3xx_lowlevel_ec_allocate_point_from_data(cc3xx_ec_curve_t *curve,
  *
  * @param[in]  p                 The point to free.
  */
-void cc3xx_lowlevel_ec_free_point(cc3xx_ec_point_affine *p);
+void cc3xx_lowlevel_ec_free_point(const cc3xx_ec_point_affine *p);
 
 /**
  * @brief                        Add two affine points
