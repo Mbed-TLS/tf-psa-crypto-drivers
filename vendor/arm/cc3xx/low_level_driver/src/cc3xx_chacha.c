@@ -400,7 +400,7 @@ cc3xx_err_t cc3xx_lowlevel_chacha20_finish(uint32_t *tag, size_t *size)
 
 void cc3xx_lowlevel_chacha20_uninit(void)
 {
-    uint32_t zero_iv[3] = {0};
+    const uint32_t zero_iv[3] = {0};
     memset(&chacha_state, 0, sizeof(chacha_state));
 
 #if defined(CC3XX_CONFIG_CHACHA_POLY1305_ENABLE)
