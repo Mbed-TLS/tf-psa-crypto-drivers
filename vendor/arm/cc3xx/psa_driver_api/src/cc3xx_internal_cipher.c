@@ -61,9 +61,9 @@ static psa_status_t cc3xx_internal_aes_setup(
     const psa_algorithm_t default_alg = PSA_ALG_AEAD_WITH_DEFAULT_LENGTH_TAG(alg);
     cc3xx_aes_keysize_t key_size;
     cc3xx_aes_mode_t mode;
+#ifdef CC3XX_CRYPTO_OPAQUE_KEYS
     cc3xx_aes_key_id_t key_id = CC3XX_AES_KEY_ID_USER_KEY;
 
-#ifdef CC3XX_CRYPTO_OPAQUE_KEYS
     if (CC3XX_IS_OPAQUE_KEY(attributes)) {
         key_id = (cc3xx_aes_key_id_t)(((uint32_t *)key_buffer)[0]);
     }
@@ -129,12 +129,18 @@ static psa_status_t cc3xx_internal_aes_setup(
     state->direction = (dir == PSA_CRYPTO_DRIVER_ENCRYPT) ?
                 CC3XX_AES_DIRECTION_ENCRYPT : CC3XX_AES_DIRECTION_DECRYPT;
     state->key_size = key_size;
-    state->key_id = key_id;
 
-    if (key_id == CC3XX_AES_KEY_ID_USER_KEY) {
-        cc3xx_dpa_hardened_word_copy(state->key_buf, (uint32_t *)key_buffer,
-                                     key_buffer_size / sizeof(uint32_t));
+#ifdef CC3XX_CRYPTO_OPAQUE_KEYS
+    state->key_id = key_id;
+    if (key_id != CC3XX_AES_KEY_ID_USER_KEY) {
+        return PSA_SUCCESS;
     }
+#else
+    state->key_id = CC3XX_AES_KEY_ID_USER_KEY;
+#endif /* CC3XX_CRYPTO_OPAQUE_KEYS */
+
+    cc3xx_dpa_hardened_word_copy(
+        state->key_buf, (uint32_t *)key_buffer, key_buffer_size / sizeof(uint32_t));
 
     return PSA_SUCCESS;
 }
