@@ -273,6 +273,8 @@ cc3xx_err_t cc3xx_lowlevel_get_entropy(uint32_t *entropy, size_t entropy_len)
 
     if (!CC3XX_IS_NOISE_SOURCE_CONTEXT_VALID(&g_trng_ctx)) {
         cc3xx_lowlevel_noise_source_context_init(&g_trng_ctx);
+        /* Perform any required configuration on the Noise Source first */
+        cc3xx_lowlevel_noise_source_sp800_90b_mode(&g_trng_ctx);
     }
 
     do {
@@ -283,8 +285,6 @@ cc3xx_err_t cc3xx_lowlevel_get_entropy(uint32_t *entropy, size_t entropy_len)
         }
 
         if (!g_entropy_tests.startup_done) {
-            /* Perform any required configuration on the Noise Source first */
-            cc3xx_lowlevel_noise_source_sp800_90b_mode(&g_trng_ctx);
             /* Perform the extensive collection on startup */
             err = startup_test(CC3XX_TRNG_SAMPLE_SIZE);
             if (err != CC3XX_ERR_SUCCESS) {
