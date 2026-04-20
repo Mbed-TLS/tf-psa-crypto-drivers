@@ -18,10 +18,9 @@ static inline void long_dec(uint32_t acc32[4])
 {
     uint8_t *acc = (uint8_t *)acc32;
     uint16_t borrow = 1;
-
     size_t i = 4 * sizeof(uint32_t);
-    while (i > 0)
-    {
+
+    while (i > 0) {
         i--;
         /* Underflows to 0xFFFF when acc[i] is 0x00 */
         borrow = (uint16_t)acc[i] - borrow;
@@ -36,8 +35,7 @@ static inline void long_inc(uint32_t acc32[4])
     uint16_t carry = 1;
     size_t acc_size = 4 * sizeof(uint32_t);
 
-    while (acc_size > 0)
-    {
+    while (acc_size > 0) {
         acc_size--;
         carry = (uint16_t)acc[acc_size] + carry;
         acc[acc_size] = (uint8_t)carry;
