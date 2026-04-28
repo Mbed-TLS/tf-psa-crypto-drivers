@@ -13,6 +13,7 @@
 #include "cc3xx_drbg_ctr.h"
 #include "cc3xx_rng.h"
 #include "cc3xx_stdlib.h"
+#include "fatal_error.h"
 
 static inline void long_dec(uint32_t acc32[4])
 {
@@ -172,6 +173,7 @@ cc3xx_err_t cc3xx_lowlevel_drbg_ctr_generate(
 
     if (state->reseed_counter == UINT32_MAX) {
         /* When we reach 2^32 invocations we must reseed */
+        NONFATAL_ERR(CC3XX_ERR_DRBG_RESEED_REQUIRED);
         return CC3XX_ERR_DRBG_RESEED_REQUIRED;
     }
 

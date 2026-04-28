@@ -185,6 +185,7 @@ cc3xx_err_t cc3xx_lowlevel_ecdsa_derive_key(
     const cc3xx_ec_curve_data_t *curve_data = cc3xx_lowlevel_ec_get_curve_data(curve_id);
 
     if (curve_data == NULL) {
+        NONFATAL_ERR(CC3XX_ERR_EC_CURVE_NOT_SUPPORTED);
         return CC3XX_ERR_EC_CURVE_NOT_SUPPORTED;
     }
 
@@ -193,10 +194,12 @@ cc3xx_err_t cc3xx_lowlevel_ecdsa_derive_key(
     uint32_t kdf_output[bytes_required_for_unbiased_key / sizeof(uint32_t)];
 
     if (bytes_required_for_unbiased_key == 0) {
+        NONFATAL_ERR(CC3XX_ERR_EC_CURVE_NOT_SUPPORTED);
         return CC3XX_ERR_EC_CURVE_NOT_SUPPORTED;
     }
 
     if (out_size < curve_data->modulus_size) {
+        FATAL_ERR(CC3XX_ERR_BUFFER_OVERFLOW);
         return CC3XX_ERR_BUFFER_OVERFLOW;
     }
 
@@ -482,6 +485,7 @@ static cc3xx_err_t ecdsa_sign(bool is_deterministic, cc3xx_ec_curve_id_t curve_i
 
 #if !defined(CC3XX_CONFIG_ECDSA_SIGN_DETERMINISTIC_ENABLE)
     if (is_deterministic) {
+        NONFATAL_ERR(CC3XX_ERR_NOT_IMPLEMENTED);
         return CC3XX_ERR_NOT_IMPLEMENTED;
     }
 #endif /* CC3XX_CONFIG_ECDSA_SIGN_DETERMINISTIC_ENABLE */

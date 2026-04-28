@@ -451,17 +451,20 @@ cc3xx_err_t cc3xx_lowlevel_aes_valid_iv_length(
     case CC3XX_AES_MODE_CMAC:
         /* No IV to set up for CMAC */
         (void)iv_len;
+        FATAL_ERR(CC3XX_ERR_INVALID_IV_LENGTH);
         return CC3XX_ERR_INVALID_IV_LENGTH;
 #endif /* CC3XX_CONFIG_AES_CMAC_ENABLE */
 #ifdef CC3XX_CONFIG_AES_ECB_ENABLE
     case CC3XX_AES_MODE_ECB:
         /* No IV to set up for ECB */
         (void)iv_len;
+        FATAL_ERR(CC3XX_ERR_INVALID_IV_LENGTH);
         return CC3XX_ERR_INVALID_IV_LENGTH;
 #endif /* CC3XX_CONFIG_AES_ECB_ENABLE */
 #ifdef CC3XX_CONFIG_AES_CTR_ENABLE
     case CC3XX_AES_MODE_CTR:
         if (iv_len != 16) {
+            FATAL_ERR(CC3XX_ERR_INVALID_IV_LENGTH);
             return CC3XX_ERR_INVALID_IV_LENGTH;
         }
         break;
@@ -469,6 +472,7 @@ cc3xx_err_t cc3xx_lowlevel_aes_valid_iv_length(
 #ifdef CC3XX_CONFIG_AES_CBC_ENABLE
     case CC3XX_AES_MODE_CBC:
         if (iv_len != 16) {
+            FATAL_ERR(CC3XX_ERR_INVALID_IV_LENGTH);
             return CC3XX_ERR_INVALID_IV_LENGTH;
         }
         break;
@@ -477,10 +481,12 @@ cc3xx_err_t cc3xx_lowlevel_aes_valid_iv_length(
     case CC3XX_AES_MODE_GCM:
 #ifdef CC3XX_CONFIG_AES_GCM_VARIABLE_IV_ENABLE
         if (iv_len == 0) {
+            FATAL_ERR(CC3XX_ERR_INVALID_IV_LENGTH);
             return CC3XX_ERR_INVALID_IV_LENGTH;
         }
 #else
         if (iv_len != 12) {
+            FATAL_ERR(CC3XX_ERR_INVALID_IV_LENGTH);
             return CC3XX_ERR_INVALID_IV_LENGTH;
         }
 #endif /* CC3XX_CONFIG_AES_GCM_VARIABLE_IV_ENABLE */
@@ -489,11 +495,13 @@ cc3xx_err_t cc3xx_lowlevel_aes_valid_iv_length(
 #ifdef CC3XX_CONFIG_AES_CCM_ENABLE
     case CC3XX_AES_MODE_CCM:
         if (!((iv_len >= 7) && (iv_len <= 13))) {
+            FATAL_ERR(CC3XX_ERR_INVALID_IV_LENGTH);
             return CC3XX_ERR_INVALID_IV_LENGTH;
         }
         break;
 #endif /* CC3XX_CONFIG_AES_CCM_ENABLE */
     default:
+        NONFATAL_ERR(CC3XX_ERR_NOT_IMPLEMENTED);
         return CC3XX_ERR_NOT_IMPLEMENTED;
     }
 
@@ -587,7 +595,7 @@ cc3xx_err_t cc3xx_lowlevel_aes_init(
         break;
 #endif /* CC3XX_CONFIG_AES_CCM_ENABLE */
     default:
-        FATAL_ERR(CC3XX_ERR_NOT_IMPLEMENTED);
+        NONFATAL_ERR(CC3XX_ERR_NOT_IMPLEMENTED);
         return CC3XX_ERR_NOT_IMPLEMENTED;
     }
 

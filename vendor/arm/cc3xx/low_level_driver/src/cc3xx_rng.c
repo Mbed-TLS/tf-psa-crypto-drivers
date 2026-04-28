@@ -234,6 +234,7 @@ cc3xx_err_t cc3xx_lowlevel_rng_get_random(uint8_t *buf, size_t length,
 {
     if (buf == NULL) {
         if (length) {
+            FATAL_ERR(CC3XX_ERR_INVALID_INPUT_LENGTH);
             return CC3XX_ERR_INVALID_INPUT_LENGTH;
         }
         return CC3XX_ERR_SUCCESS;
@@ -256,6 +257,7 @@ cc3xx_err_t cc3xx_lowlevel_rng_get_random(uint8_t *buf, size_t length,
     case CC3XX_RNG_DRBG:
         return drbg_get_random(buf, length);
     default:
+        FATAL_ERR(CC3XX_ERR_RNG_INVALID_RNG);
         return CC3XX_ERR_RNG_INVALID_RNG;
     }
 }

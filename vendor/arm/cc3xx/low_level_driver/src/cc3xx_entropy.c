@@ -334,12 +334,14 @@ cc3xx_lowlevel_entropy_sp800_90b_set_config(uint32_t high_threshold,
     /* Basic sanitation of the adaptive proportion test cutoff rate */
     if (high_threshold > SP800_90B_ADAPTIVE_PROPORTION_WINDOW_SIZE ||
         high_threshold <= (SP800_90B_ADAPTIVE_PROPORTION_WINDOW_SIZE/2)) {
+        FATAL_ERR(CC3XX_ERR_RNG_SP800_90B_INVALID_THRESHOLD);
         return CC3XX_ERR_RNG_SP800_90B_INVALID_THRESHOLD;
     }
 
     /* Basic sanitation of the repetition count test cutoff rate */
     if (repetition_count > SP800_90B_ADAPTIVE_PROPORTION_WINDOW_SIZE ||
         repetition_count <= 1) {
+        FATAL_ERR(CC3XX_ERR_RNG_SP800_90B_INVALID_THRESHOLD);
         return CC3XX_ERR_RNG_SP800_90B_INVALID_THRESHOLD;
     }
 

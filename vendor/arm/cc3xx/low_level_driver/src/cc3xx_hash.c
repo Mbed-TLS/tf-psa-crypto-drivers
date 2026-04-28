@@ -115,7 +115,7 @@ cc3xx_err_t cc3xx_lowlevel_hash_init(cc3xx_hash_alg_t alg)
 #endif /* CC3XX_CONFIG_HASH_SHA1_ENABLE */
     default:
         cc3xx_lowlevel_hash_uninit();
-        FATAL_ERR(CC3XX_ERR_NOT_IMPLEMENTED);
+        NONFATAL_ERR(CC3XX_ERR_NOT_IMPLEMENTED);
         return CC3XX_ERR_NOT_IMPLEMENTED;
     }
 

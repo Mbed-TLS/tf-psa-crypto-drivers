@@ -394,6 +394,7 @@ cc3xx_err_t cc3xx_lowlevel_noise_source_set_config(
 
     return CC3XX_ERR_SUCCESS;
 #else
+    NONFATAL_ERR(CC3XX_ERR_NOT_IMPLEMENTED);
     return CC3XX_ERR_NOT_IMPLEMENTED;
 #endif /* CC3XX_CONFIG_RNG_EXTERNAL_TRNG */
 }

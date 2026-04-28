@@ -281,14 +281,14 @@ cc3xx_err_t cc3xx_lowlevel_ec_init(cc3xx_ec_curve_id_t id,
     cc3xx_pka_reg_id_t barrett_tag;
 
     if (id >= _CURVE_ID_MAX) {
-        FATAL_ERR(CC3XX_ERR_EC_CURVE_NOT_SUPPORTED);
+        NONFATAL_ERR(CC3XX_ERR_EC_CURVE_NOT_SUPPORTED);
         return CC3XX_ERR_EC_CURVE_NOT_SUPPORTED;
     }
 
     const cc3xx_ec_curve_data_t *curve_data = curve_data_map[id];
 
     if (curve_data == NULL) {
-        FATAL_ERR(CC3XX_ERR_EC_CURVE_NOT_SUPPORTED);
+        NONFATAL_ERR(CC3XX_ERR_EC_CURVE_NOT_SUPPORTED);
         return CC3XX_ERR_EC_CURVE_NOT_SUPPORTED;
     }
 
@@ -676,18 +676,22 @@ cc3xx_err_t cc3xx_lowlevel_ec_scalar_reduce_curve_order(
     const cc3xx_ec_curve_data_t *curve_data = cc3xx_lowlevel_ec_get_curve_data(curve_id);
 
     if (curve_data == NULL) {
+        NONFATAL_ERR(CC3XX_ERR_EC_CURVE_NOT_SUPPORTED);
         return CC3XX_ERR_EC_CURVE_NOT_SUPPORTED;
     }
 
     if (x == NULL || out == NULL) {
+        FATAL_ERR(CC3XX_ERR_INVALID_DATA);
         return CC3XX_ERR_INVALID_DATA;
     }
 
     if (out_size < curve_data->modulus_size) {
+        FATAL_ERR(CC3XX_ERR_BUFFER_OVERFLOW);
         return CC3XX_ERR_BUFFER_OVERFLOW;
     }
 
     if (x_len == 0) {
+        FATAL_ERR(CC3XX_ERR_INVALID_INPUT_LENGTH);
         return CC3XX_ERR_INVALID_INPUT_LENGTH;
     }
 
