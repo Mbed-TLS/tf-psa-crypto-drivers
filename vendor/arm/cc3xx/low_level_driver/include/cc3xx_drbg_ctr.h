@@ -63,7 +63,7 @@ struct cc3xx_drbg_ctr_state_t {
 };
 
 /**
- * @brief Instantiate the CTR_DRBG
+ * @brief Instantiate the CTR_DRBG using Block_Cipher_df to derive the seed
  *
  * @param[out] state              A pointer to a state structure
  * @param[in] entropy             Buffer containing the entropy for the instantiation
@@ -84,6 +84,8 @@ cc3xx_err_t cc3xx_lowlevel_drbg_ctr_init(
 /**
  * @brief Generates random bits from the CTR_DRBG instance
  *
+ * If provided, additional input is first processed through Block_Cipher_df.
+ *
  * @param[in,out] state            Pointer to an instantiated CTR_DRBG generator
  * @param[in] len_bits             Size in bits to be generated. Must be byte aligned for simplicity
  * @param[out] returned_bits       Pointer where the random bits will be written to
@@ -98,7 +100,7 @@ cc3xx_err_t cc3xx_lowlevel_drbg_ctr_generate(
     const uint8_t *additional_input, size_t additional_input_len);
 
 /**
- * @brief Reseeds the CTR_DRBG
+ * @brief Reseeds the CTR_DRBG using Block_Cipher_df to derive the seed
  *
  * @param[in,out] state            A pointer to a state structure
  * @param[in] entropy              Entropy to be used for reseeding
