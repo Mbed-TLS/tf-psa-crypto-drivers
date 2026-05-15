@@ -568,6 +568,7 @@ psa_status_t cc3xx_aead_update(
 #if !defined(CC3XX_CONFIG_AES_TUNNELLING_ENABLE) && defined(PSA_WANT_ALG_CCM)
     bool ctr_required;
     size_t ctr_block_buf_size_in_use = 0;
+    uint32_t ccm_ctr[AES_CTR_LEN / sizeof(uint32_t)] = {0};
 #endif /* !CC3XX_CONFIG_AES_TUNNELLING_ENABLE && PSA_WANT_ALG_CCM */
 
     CC3XX_ASSERT(operation != NULL);
@@ -591,6 +592,7 @@ psa_status_t cc3xx_aead_update(
     if (ctr_required) {
         ctr_block_buf_size_in_use = (operation->aes.crypted_length > 0) ?
                                     operation->aes.dma_state.block_buf_size_in_use : 0;
+        memcpy(ccm_ctr, operation->aes.ctr, sizeof(ccm_ctr));
 
         if (operation->aes.direction == CC3XX_AES_DIRECTION_DECRYPT) {
             status = cc3xx_aead_ccm_ctr_update(operation,
@@ -606,6 +608,7 @@ psa_status_t cc3xx_aead_update(
 
             /* CBC-MAC computes the tag on plaintext data */
             input = output;
+            memcpy(ccm_ctr, operation->aes.ctr, sizeof(ccm_ctr));
         }
     }
 #endif /* !CC3XX_CONFIG_AES_TUNNELLING_ENABLE && PSA_WANT_ALG_CCM */
@@ -715,6 +718,15 @@ out_chacha20:
         operation->last_output_num_bytes = current_output_size;
 
         cc3xx_lowlevel_aes_get_state(&operation->aes);
+
+#if !defined(CC3XX_CONFIG_AES_TUNNELLING_ENABLE) && defined(PSA_WANT_ALG_CCM)
+        if (ctr_required) {
+            /* Keep the software-tracked CCM CTR stream separate from the
+             * low-level CCM/CBC-MAC state captured above.
+             */
+            memcpy(operation->aes.ctr, ccm_ctr, sizeof(operation->aes.ctr));
+        }
+#endif /* !CC3XX_CONFIG_AES_TUNNELLING_ENABLE && PSA_WANT_ALG_CCM */
 
         cc3xx_lowlevel_aes_uninit();
 
