@@ -737,7 +737,7 @@ static uint32_t CC3XX_ATTRIBUTE_INLINE opcode_construct(enum cc3xx_pka_operation
     opcode |= (size & 0b111) << 24;
 
     /* Set the actual operation */
-    opcode |= (op & 0b11111) << 27;
+    opcode |= ((uint32_t)op & 0b11111U) << 27;
 
     /* Wait for a pipeline slot to be free before submitting this operation.
      * Note that the previous operations may still be in progress at this point.
