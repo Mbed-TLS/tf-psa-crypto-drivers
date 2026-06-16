@@ -39,7 +39,35 @@ A typical layout looks like:
 
 Each driver resides in its own directory and includes documentation
 describing its functionality and usage. The documentation structure
-within a vendo directory is defined by the vendor.
+within a vendor directory is defined by the vendor.
+
+**************
+Maintainership
+**************
+
+This repository is maintained as a shared, collaborative effort within the
+open-source community. Each vendor is responsible for maintaining its own
+driver code, including updates, fixes, and ongoing support. Drivers are
+independently owned by the respective maintainers designated by each vendor.
+
+Code Owners
+===========
+
+Arm
+^^^
+
+- `Amjad Ouled-Ameur <https://github.com/amjoul01>`__ (`amjad.ouled-ameur@arm.com <amjad.ouled-ameur@arm.com>`__)
+- `Antonio de Angelis <https://github.com/adeaarm>`__ (`Antonio.deAngelis@arm.com <Antonio.deAngelis@arm.com>`__)
+
+*******
+Testing
+*******
+
+There is no common or unified testing framework for PSA Crypto drivers in this
+repository. Each vendor is responsible for testing and quality assurance of the
+drivers they provide and maintain. Vendors are expected to supply documentation
+describing how to test their drivers, including any required tools, test cases
+and procedures.
 
 *******
 License
