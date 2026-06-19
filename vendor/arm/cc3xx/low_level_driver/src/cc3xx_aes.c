@@ -1151,6 +1151,7 @@ static cc3xx_err_t cmac_finish(uint32_t *tag)
     if (aes_state.authed_length == 0) {
         /* Special-case for when no data has been input. */
         P_CC3XX->aes.aes_cmac_size0_kick = 0b1U;
+        while (P_CC3XX->aes.aes_busy) {}
     }
 
     /* The tag is just the final IV */
