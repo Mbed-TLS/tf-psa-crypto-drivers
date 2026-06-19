@@ -423,6 +423,7 @@ static cc3xx_err_t init_from_state(void)
     if (aes_state.mode == CC3XX_AES_MODE_CMAC) {
         /* Kick the CC to derive K1 and K2 */
         P_CC3XX->aes.aes_cmac_init = 0b1U;
+        while (P_CC3XX->aes.aes_busy) {}
     }
 #endif /* CC3XX_CONFIG_AES_CMAC_ENABLE */
 
