@@ -423,7 +423,8 @@ static cc3xx_err_t init_from_state(void)
     if (aes_state.mode == CC3XX_AES_MODE_CMAC) {
         /* Kick the CC to derive K1 and K2 */
         P_CC3XX->aes.aes_cmac_init = 0b1U;
-        while (P_CC3XX->aes.aes_busy) {}
+        while (P_CC3XX->aes.aes_busy) {
+        }
     }
 #endif /* CC3XX_CONFIG_AES_CMAC_ENABLE */
 
@@ -1152,7 +1153,8 @@ static cc3xx_err_t cmac_finish(uint32_t *tag)
     if (aes_state.authed_length == 0) {
         /* Special-case for when no data has been input. */
         P_CC3XX->aes.aes_cmac_size0_kick = 0b1U;
-        while (P_CC3XX->aes.aes_busy) {}
+        while (P_CC3XX->aes.aes_busy) {
+        }
     }
 
     /* The tag is just the final IV */
