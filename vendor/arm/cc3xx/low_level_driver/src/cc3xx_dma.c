@@ -32,14 +32,16 @@ struct cc3xx_dma_state_t dma_state;
 static cc3xx_dma_remap_region_t g_remap_regions[CC3XX_CONFIG_DMA_REMAP_REGION_AM] = {0};
 
 void cc3xx_lowlevel_dma_remap_region_init(uint32_t remap_region_idx,
-                                        const cc3xx_dma_remap_region_t *region)
+                                          const cc3xx_dma_remap_region_t *region)
 {
+    assert(remap_region_idx < CC3XX_CONFIG_DMA_REMAP_REGION_AM);
     memcpy(&g_remap_regions[remap_region_idx], region, sizeof(*region));
     g_remap_regions[remap_region_idx].valid = true;
 }
 
 void cc3xx_lowlevel_dma_remap_region_clear(uint32_t remap_region_idx)
 {
+    assert(remap_region_idx < CC3XX_CONFIG_DMA_REMAP_REGION_AM);
     memset(&g_remap_regions[remap_region_idx], 0, sizeof(cc3xx_dma_remap_region_t));
     g_remap_regions[remap_region_idx].valid = false;
 }
