@@ -25,13 +25,12 @@ cc3xx_err_t cc3xx_lowlevel_otp_write(uint8_t *otp_addr,
     uint32_t current_word;
     uint32_t word;
     uint32_t start_offset;
-    uint8_t in_done = 0;
     size_t copy_size;
 
     /* First iterate through and check all values are valid (will not require a
      * 1 bit to be unset).
      */
-    for(in_done = 0; in_done < size;) {
+    for (size_t in_done = 0; in_done < size;) {
         start_offset = ((uint32_t)otp_addr + in_done) & 0x3;
         word_ptr = (uint32_t *)(otp_addr + in_done - start_offset);
 
@@ -54,7 +53,7 @@ cc3xx_err_t cc3xx_lowlevel_otp_write(uint8_t *otp_addr,
     }
 
     /* Then write the OTP */
-    for(in_done = 0; in_done < size;) {
+    for (size_t in_done = 0; in_done < size;) {
         start_offset = ((uint32_t)otp_addr + in_done) & 0x3;
         word_ptr = (uint32_t *)(otp_addr + in_done - start_offset);
 
@@ -82,10 +81,9 @@ cc3xx_err_t cc3xx_lowlevel_otp_read(const uint8_t *otp_addr,
     const uint32_t *word_ptr;
     uint32_t word;
     uint32_t start_offset;
-    uint8_t out_done;
     size_t copy_size;
 
-    for(out_done = 0; out_done < size;) {
+    for (size_t out_done = 0; out_done < size;) {
         start_offset = ((uint32_t)otp_addr + out_done) & 0x3;
         word_ptr = (uint32_t *)(otp_addr + out_done - start_offset);
 
