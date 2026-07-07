@@ -483,7 +483,7 @@ cc3xx_err_t cc3xx_lowlevel_drbg_ctr_generate(
         return CC3XX_ERR_DRBG_DF_INPUT_TOO_LONG;
     }
 
-    if (additional_input != NULL) {
+    if ((additional_input != NULL) && (additional_input_len != 0)) {
         const uint8_t *df_inputs[] = {
             additional_input
         };
