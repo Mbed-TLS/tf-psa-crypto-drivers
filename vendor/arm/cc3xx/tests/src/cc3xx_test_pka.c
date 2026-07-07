@@ -1226,7 +1226,8 @@ void pka_test_cycle_counts(struct test_result_t *ret)
         cyccnt_start = get_cycle_count();
         for (int J = 0; J < 100; J++) {
             trinary_dual_uimm_functions[I](r0, imm, imm);
-            while(!P_CC3XX->pka.pka_done){}
+            while(!P_CC3XX->pka.pka_done){
+            }
         }
         cyccnt_end = get_cycle_count();
         printf_set_color(MAGENTA);

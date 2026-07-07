@@ -16,7 +16,8 @@ cc3xx_err_t cc3xx_lowlevel_lcs_get(cc3xx_lcs_t* lcs)
     uint32_t code = 0;
 
     /* Wait until the NVM controller is idle */
-    while (! (P_CC3XX->nvm.nvm_is_idle & 0b1U)) {}
+    while (!(P_CC3XX->nvm.nvm_is_idle & 0b1U)) {
+    }
 
     if (! (P_CC3XX->nvm.lcs_is_valid & 0b1U)) {
         return CC3XX_ERR_INVALID_LCS;

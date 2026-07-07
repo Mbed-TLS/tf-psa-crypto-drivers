@@ -221,7 +221,8 @@ void cc3xx_lowlevel_hash_finish(uint32_t *res, size_t length)
     }
 
     /* Wait until HASH engine is idle */
-    while (P_CC3XX->cc_ctl.hash_busy != 0) {}
+    while (P_CC3XX->cc_ctl.hash_busy != 0) {
+    }
 
     get_hash_h(res, length);
 

@@ -263,7 +263,8 @@ static void gcm_calc_initial_counter_from_iv(uint32_t *counter,
     cc3xx_lowlevel_dma_flush_buffer(false);
 
     /* Wait for the GHASH to complete */
-    while(P_CC3XX->ghash.ghash_busy) {}
+    while(P_CC3XX->ghash.ghash_busy) {
+    }
 
     /* Grab the result out of the GHASH buffer */
     counter[0] = P_CC3XX->ghash.ghash_iv_0[0];
@@ -947,7 +948,8 @@ void cc3xx_lowlevel_aes_update_authed_data(const uint8_t* in, size_t in_len)
                                                  write_output);
     if (err != CC3XX_ERR_SUCCESS) {
         assert(0);
-        while (1) {};
+        while (1) {
+        }
     }
 }
 
@@ -1122,7 +1124,8 @@ static cc3xx_err_t gcm_finish(uint32_t *tag)
     cc3xx_lowlevel_dma_flush_buffer(false);
 
     /* Wait for the GHASH to finish */
-    while(P_CC3XX->ghash.ghash_busy){}
+    while(P_CC3XX->ghash.ghash_busy){
+    }
 
     /* Set up CTR mode, using the saved counter 0 value */
     set_ctr(aes_state.counter_0);
@@ -1139,7 +1142,8 @@ static cc3xx_err_t gcm_finish(uint32_t *tag)
     cc3xx_lowlevel_dma_buffered_input_data(final_block, AES_GCM_FIELD_POINT_SIZE, true, true);
     cc3xx_lowlevel_dma_flush_buffer(false);
 
-    while(P_CC3XX->aes.aes_busy) {}
+    while(P_CC3XX->aes.aes_busy) {
+    }
 
     return tag_cmp_or_copy(tag, calculated_tag);
 }

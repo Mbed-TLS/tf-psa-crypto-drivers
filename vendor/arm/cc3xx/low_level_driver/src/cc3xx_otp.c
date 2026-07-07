@@ -15,7 +15,8 @@
 
 static void wait_until_fuse_programming_complete(void)
 {
-    while (!(P_CC3XX->nvm.aib_fuse_prog_completed & 1)) {}
+    while (!(P_CC3XX->nvm.aib_fuse_prog_completed & 1)) {
+    }
 }
 
 cc3xx_err_t cc3xx_lowlevel_otp_write(uint8_t *otp_addr,
