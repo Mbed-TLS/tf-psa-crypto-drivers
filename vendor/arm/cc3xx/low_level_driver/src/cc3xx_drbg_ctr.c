@@ -75,7 +75,7 @@ static void store_u32_be(uint8_t *buf, uint32_t value)
 /**
  * @brief Encrypt one AES block with the CTR_DRBG AES-CTR primitive.
  *
- * @param[in]  key    AES-128 key
+ * @param[in]  key    AES key
  * @param[in]  block  Counter block to encrypt
  * @param[out] output Encrypted block
  *
@@ -92,7 +92,8 @@ static cc3xx_err_t aes_encrypt_block(
     err = cc3xx_lowlevel_aes_init(CC3XX_AES_DIRECTION_ENCRYPT,
                                   CC3XX_AES_MODE_CTR,
                                   CC3XX_AES_KEY_ID_USER_KEY,
-                                  (const uint32_t *)key, CC3XX_AES_KEYSIZE_128,
+                                  (const uint32_t *)key,
+                                  CC3XX_DRBG_CTR_AES_KEYSIZE_ID,
                                   (const uint32_t *)block,
                                   CC3XX_DRBG_CTR_BLOCKLEN);
     if (err != CC3XX_ERR_SUCCESS) {
@@ -114,7 +115,7 @@ static cc3xx_err_t aes_encrypt_block(
 /**
  * @brief Process one complete BCC input block.
  *
- * @param[in]     key AES-128 key for BCC
+ * @param[in]     key AES key for BCC
  * @param[in,out] bcc BCC state
  *
  * @return cc3xx_err_t
@@ -139,7 +140,7 @@ static cc3xx_err_t bcc_process_block(
 /**
  * @brief Feed bytes into a BCC operation.
  *
- * @param[in]     key      AES-128 key for BCC
+ * @param[in]     key      AES key for BCC
  * @param[in,out] bcc      BCC state
  * @param[in]     data     Input bytes
  * @param[in]     data_len Input length in bytes
@@ -179,7 +180,7 @@ static cc3xx_err_t bcc_update(
 /**
  * @brief Feed one byte into a BCC operation.
  *
- * @param[in]     key   AES-128 key for BCC
+ * @param[in]     key   AES key for BCC
  * @param[in,out] bcc   BCC state
  * @param[in]     value Input byte
  *
@@ -347,7 +348,8 @@ static cc3xx_err_t cc3xx_drbg_ctr_update(
     err = cc3xx_lowlevel_aes_init(CC3XX_AES_DIRECTION_ENCRYPT,
                                   CC3XX_AES_MODE_CTR,
                                   CC3XX_AES_KEY_ID_USER_KEY,
-                                  (const uint32_t *)state->key_k, CC3XX_AES_KEYSIZE_128,
+                                  (const uint32_t *)state->key_k,
+                                  CC3XX_DRBG_CTR_AES_KEYSIZE_ID,
                                   (const uint32_t *)state->block_v, sizeof(state->block_v));
     if (err != CC3XX_ERR_SUCCESS) {
         return err;
@@ -360,7 +362,7 @@ static cc3xx_err_t cc3xx_drbg_ctr_update(
         return err;
     }
 
-    /* allow for the update() to happen on less than 256 bit of data */
+    /* Allow for the update() to happen on less than seedlen bytes of data. */
     if (data_len < CC3XX_DRBG_CTR_SEEDLEN) {
         uint8_t all_zeros[CC3XX_DRBG_CTR_SEEDLEN - data_len];
         memset(all_zeros, 0, sizeof(all_zeros));
@@ -511,7 +513,8 @@ cc3xx_err_t cc3xx_lowlevel_drbg_ctr_generate(
     err = cc3xx_lowlevel_aes_init(CC3XX_AES_DIRECTION_ENCRYPT,
                                   CC3XX_AES_MODE_CTR,
                                   CC3XX_AES_KEY_ID_USER_KEY,
-                                  (const uint32_t *)state->key_k, CC3XX_AES_KEYSIZE_128,
+                                  (const uint32_t *)state->key_k,
+                                  CC3XX_DRBG_CTR_AES_KEYSIZE_ID,
                                   (const uint32_t *)state->block_v, sizeof(state->block_v));
     if (err != CC3XX_ERR_SUCCESS) {
         goto out;

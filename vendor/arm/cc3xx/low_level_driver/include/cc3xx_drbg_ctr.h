@@ -10,6 +10,7 @@
 
 #include "cc3xx_error.h"
 #include "cc3xx_aes.h"
+#include "cc3xx_config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,14 +22,34 @@ extern "C" {
  */
 #define CC3XX_DRBG_CTR_BLOCKLEN (AES_BLOCK_SIZE)
 
-/**
- * @brief CTR mode uses AES-128 only as underlying block cipher
- *
- */
-#define CC3XX_DRBG_CTR_KEYLEN (16)
+#ifndef CC3XX_CONFIG_DRBG_CTR_AES_KEYSIZE
+#define CC3XX_CONFIG_DRBG_CTR_AES_KEYSIZE 128
+#endif /* CC3XX_CONFIG_DRBG_CTR_AES_KEYSIZE */
+
+#if (CC3XX_CONFIG_DRBG_CTR_AES_KEYSIZE != 128) && \
+    (CC3XX_CONFIG_DRBG_CTR_AES_KEYSIZE != 256)
+#error "cc3xx_config: CTR_DRBG AES key size must be 128 or 256"
+#endif /* CC3XX_CONFIG_DRBG_CTR_AES_KEYSIZE */
 
 /**
- * @brief AES-128 key length in words, as used by the CTR_DRBG module
+ * @brief CTR_DRBG AES key length in bytes.
+ */
+#define CC3XX_DRBG_CTR_KEYLEN (CC3XX_CONFIG_DRBG_CTR_AES_KEYSIZE / 8)
+
+#if (CC3XX_CONFIG_DRBG_CTR_AES_KEYSIZE == 128)
+/**
+ * @brief CTR_DRBG AES key size to pass to the AES low-level driver.
+ */
+#define CC3XX_DRBG_CTR_AES_KEYSIZE_ID (CC3XX_AES_KEYSIZE_128)
+#else
+/**
+ * @brief CTR_DRBG AES key size to pass to the AES low-level driver.
+ */
+#define CC3XX_DRBG_CTR_AES_KEYSIZE_ID (CC3XX_AES_KEYSIZE_256)
+#endif /* CC3XX_CONFIG_DRBG_CTR_AES_KEYSIZE */
+
+/**
+ * @brief AES key length in words, as used by the CTR_DRBG module
  *
  */
 #define CC3XX_DRBG_CTR_KEYLEN_WORDS ((CC3XX_DRBG_CTR_KEYLEN)/(4))
