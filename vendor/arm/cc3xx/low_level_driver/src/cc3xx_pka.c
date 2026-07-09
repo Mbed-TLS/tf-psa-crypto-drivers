@@ -148,7 +148,7 @@ void cc3xx_lowlevel_pka_unmap_physical_registers(void)
     cc3xx_pka_reg_id_t virt_reg;
 
     /* Wait for the pipeline to finish */
-    while(!P_CC3XX->pka.pka_done){
+    while (!P_CC3XX->pka.pka_done) {
     }
 
     for (idx = PKA_PHYS_REG_FIRST_MAPPABLE; idx <= PKA_PHYS_REG_LAST_MAPPABLE; idx++) {
@@ -177,7 +177,7 @@ static void pka_init_from_state(void)
     P_CC3XX->pka.pka_sw_reset = 1;
 
     /* Wait for SW reset to complete before proceeding */
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
 
 #ifdef CC3XX_CONFIG_PKA_SRAM_ENCRYPTION_SUPPORTED
@@ -281,10 +281,10 @@ static void allocate_phys_reg(cc3xx_pka_reg_id_t virt_reg)
     phys_reg = phys_reg_next_mapped;
     phys_reg_next_mapped += 1;
 
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
     P_CC3XX->pka.memory_map[phys_reg] = virt_reg_sram_addr[virt_reg];
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
 
     phys_reg_mapping_list[phys_reg] = virt_reg;
@@ -747,7 +747,7 @@ static uint32_t CC3XX_ATTRIBUTE_INLINE opcode_construct(enum cc3xx_pka_operation
     /* Wait for a pipeline slot to be free before submitting this operation.
      * Note that the previous operations may still be in progress at this point.
      */
-    while(!P_CC3XX->pka.pka_pipe_rdy) {
+    while (!P_CC3XX->pka.pka_pipe_rdy) {
     }
 
     return opcode;
@@ -763,7 +763,7 @@ uint32_t cc3xx_lowlevel_pka_get_bit_size(cc3xx_pka_reg_id_t r0)
     /* This isn't an operation that can use the PKA pipeline, so we need to wait
      * for the pipeline to be finished before reading the SRAM.
      */
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
 
     for (idx = pka_state.reg_size - sizeof(uint32_t); idx >= 0;
@@ -771,7 +771,7 @@ uint32_t cc3xx_lowlevel_pka_get_bit_size(cc3xx_pka_reg_id_t r0)
         P_CC3XX->pka.pka_sram_raddr =
             P_CC3XX->pka.memory_map[virt_reg_phys_reg[r0]] +
             pka_addr_from_byte_addr(idx);
-        while(!P_CC3XX->pka.pka_done) {
+        while (!P_CC3XX->pka.pka_done) {
         }
 
         word = P_CC3XX->pka.pka_sram_rdata;
@@ -800,16 +800,16 @@ void cc3xx_lowlevel_pka_set_to_power_of_two(cc3xx_pka_reg_id_t r0, uint32_t powe
     /* This isn't an operation that can use the PKA pipeline, so we need to wait
      * for the pipeline to be finished before reading the SRAM.
      */
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
 
     P_CC3XX->pka.pka_sram_addr =
         P_CC3XX->pka.memory_map[virt_reg_phys_reg[r0]] + word_offset;
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
 
     P_CC3XX->pka.pka_sram_wdata = final_word;
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
 }
 
@@ -990,15 +990,15 @@ uint32_t cc3xx_lowlevel_pka_test_bits_ui(cc3xx_pka_reg_id_t r0, uint32_t idx, ui
 
     ensure_virt_reg_is_mapped(r0);
 
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
     P_CC3XX->pka.pka_sram_raddr =
         P_CC3XX->pka.memory_map[virt_reg_phys_reg[r0]] + word_offset;
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
 
     bits = (P_CC3XX->pka.pka_sram_rdata >> (idx % 32)) & ((1 << bit_am) - 1);
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
 
     /* Return the inverted value of ALU_OUT_ZERO */
@@ -1032,16 +1032,16 @@ void cc3xx_lowlevel_pka_clear(cc3xx_pka_reg_id_t r0)
     /* Wait for any outstanding operations to finish before performing reads or
      * writes on the PKA SRAM
      */
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
     P_CC3XX->pka.pka_sram_addr =
         P_CC3XX->pka.memory_map[virt_reg_phys_reg[r0]];
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
 
     for (size_t idx = 0; idx < reg_size / sizeof(uint32_t); idx++) {
         P_CC3XX->pka.pka_sram_wdata = 0x0;
-        while(!P_CC3XX->pka.pka_done) {
+        while (!P_CC3XX->pka.pka_done) {
         }
     }
 }
@@ -1113,7 +1113,7 @@ bool cc3xx_lowlevel_pka_are_equal(cc3xx_pka_reg_id_t r0, cc3xx_pka_reg_id_t r1)
     /* We need the pipeline to finish before we read the status register for the
      * result.
      */
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
 
     /* Return ALU_OUT_ZERO */
@@ -1130,7 +1130,7 @@ bool cc3xx_lowlevel_pka_are_equal_si(cc3xx_pka_reg_id_t r0, int32_t imm)
     /* We need the pipeline to finish before we read the status register for the
      * result.
      */
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
 
     /* Return ALU_OUT_ZERO */
@@ -1146,7 +1146,7 @@ bool cc3xx_lowlevel_pka_less_than(cc3xx_pka_reg_id_t r0, cc3xx_pka_reg_id_t r1)
     /* Wait for the pipeline to be finished before reading the pka status
      * register.
      */
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
 
     /* Return the value of ALU_SIGN_OUT */
@@ -1162,7 +1162,7 @@ bool cc3xx_lowlevel_pka_less_than_si(cc3xx_pka_reg_id_t r0, int32_t imm)
     /* Wait for the pipeline to be finished before reading the pka status
      * register.
      */
-    while(!P_CC3XX->pka.pka_done) {
+    while (!P_CC3XX->pka.pka_done) {
     }
 
     /* Return the value of ALU_SIGN_OUT */
@@ -1195,7 +1195,7 @@ void cc3xx_lowlevel_pka_shift_right_fill_0_ui(cc3xx_pka_reg_id_t r0, uint32_t sh
         cc3xx_lowlevel_pka_copy(r0, res);
     }
 
-    while(shift > 0) {
+    while (shift > 0) {
         shift_am = shift <= (PKA_MAX_UNSIGNED_IMMEDIATE + 1) ? shift : (PKA_MAX_UNSIGNED_IMMEDIATE + 1);
 
         P_CC3XX->pka.opcode = opcode_construct(CC3XX_PKA_OPCODE_SHR0,
@@ -1214,7 +1214,7 @@ void cc3xx_lowlevel_pka_shift_right_fill_1_ui(cc3xx_pka_reg_id_t r0, uint32_t sh
         cc3xx_lowlevel_pka_copy(r0, res);
     }
 
-    while(shift > 0) {
+    while (shift > 0) {
         shift_am = shift <= (PKA_MAX_UNSIGNED_IMMEDIATE + 1) ? shift : (PKA_MAX_UNSIGNED_IMMEDIATE + 1);
 
         P_CC3XX->pka.opcode = opcode_construct(CC3XX_PKA_OPCODE_SHR1,
@@ -1233,7 +1233,7 @@ void cc3xx_lowlevel_pka_shift_left_fill_0_ui(cc3xx_pka_reg_id_t r0, uint32_t shi
         cc3xx_lowlevel_pka_copy(r0, res);
     }
 
-    while(shift > 0) {
+    while (shift > 0) {
         shift_am = shift <= (PKA_MAX_UNSIGNED_IMMEDIATE + 1) ? shift : (PKA_MAX_UNSIGNED_IMMEDIATE + 1);
 
         P_CC3XX->pka.opcode = opcode_construct(CC3XX_PKA_OPCODE_SHL0,
@@ -1252,7 +1252,7 @@ void cc3xx_lowlevel_pka_shift_left_fill_1_ui(cc3xx_pka_reg_id_t r0, uint32_t shi
         cc3xx_lowlevel_pka_copy(r0, res);
     }
 
-    while(shift > 0) {
+    while (shift > 0) {
         shift_am = shift <= (PKA_MAX_UNSIGNED_IMMEDIATE + 1) ? shift : (PKA_MAX_UNSIGNED_IMMEDIATE + 1);
 
         P_CC3XX->pka.opcode = opcode_construct(CC3XX_PKA_OPCODE_SHL1,

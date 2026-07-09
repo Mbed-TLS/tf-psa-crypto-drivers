@@ -263,7 +263,7 @@ static void gcm_calc_initial_counter_from_iv(uint32_t *counter,
     cc3xx_lowlevel_dma_flush_buffer(false);
 
     /* Wait for the GHASH to complete */
-    while(P_CC3XX->ghash.ghash_busy) {
+    while (P_CC3XX->ghash.ghash_busy) {
     }
 
     /* Grab the result out of the GHASH buffer */
@@ -1124,7 +1124,7 @@ static cc3xx_err_t gcm_finish(uint32_t *tag)
     cc3xx_lowlevel_dma_flush_buffer(false);
 
     /* Wait for the GHASH to finish */
-    while(P_CC3XX->ghash.ghash_busy){
+    while (P_CC3XX->ghash.ghash_busy) {
     }
 
     /* Set up CTR mode, using the saved counter 0 value */
@@ -1142,7 +1142,7 @@ static cc3xx_err_t gcm_finish(uint32_t *tag)
     cc3xx_lowlevel_dma_buffered_input_data(final_block, AES_GCM_FIELD_POINT_SIZE, true, true);
     cc3xx_lowlevel_dma_flush_buffer(false);
 
-    while(P_CC3XX->aes.aes_busy) {
+    while (P_CC3XX->aes.aes_busy) {
     }
 
     return tag_cmp_or_copy(tag, calculated_tag);

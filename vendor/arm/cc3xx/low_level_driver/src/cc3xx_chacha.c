@@ -89,7 +89,7 @@ static void chacha_init_from_state(void)
 
     P_CC3XX->chacha.chacha_control_reg = 0x0U;
 
-    while(P_CC3XX->chacha.chacha_busy) {
+    while (P_CC3XX->chacha.chacha_busy) {
     }
 
     if (chacha_state.iv_is_96_bit) {
