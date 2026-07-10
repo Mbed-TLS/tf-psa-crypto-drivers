@@ -36,6 +36,48 @@
 #define ROUND_UP(x, bound) ((((x) + bound - 1) / bound) * bound)
 
 #ifdef CC3XX_CONFIG_RNG_ENABLE
+#ifndef CC3XX_CONFIG_RNG_DRBG_ENTROPY_SIZE
+#if defined(CC3XX_CONFIG_RNG_DRBG_CTR)
+/**
+ * @brief Entropy input size in bytes used to seed the configured RNG DRBG.
+ *
+ * CTR_DRBG uses AES as its derivation function block cipher, so the default
+ * entropy input length follows the selected AES key length.
+ */
+#define CC3XX_CONFIG_RNG_DRBG_ENTROPY_SIZE (CC3XX_DRBG_CTR_KEYLEN)
+#else
+/**
+ * @brief Entropy input size in bytes used to seed the configured RNG DRBG.
+ *
+ * HASH_DRBG and HMAC_DRBG keep the previous RNG wrapper behaviour by default:
+ * seed from one full entropy source sample and no nonce.
+ */
+#define CC3XX_CONFIG_RNG_DRBG_ENTROPY_SIZE (CC3XX_ENTROPY_SIZE)
+#endif /* CC3XX_CONFIG_RNG_DRBG_CTR */
+#endif /* CC3XX_CONFIG_RNG_DRBG_ENTROPY_SIZE */
+
+#ifndef CC3XX_CONFIG_RNG_DRBG_NONCE_SIZE
+#if defined(CC3XX_CONFIG_RNG_DRBG_CTR)
+/**
+ * @brief Nonce size in bytes used to seed the configured RNG DRBG.
+ *
+ * SP800-90A requires a nonce of at least half the security strength when the
+ * nonce is generated from the same entropy source as the entropy input. With
+ * CTR_DRBG this makes the default nonce length half of the entropy length.
+ */
+#define CC3XX_CONFIG_RNG_DRBG_NONCE_SIZE \
+    (CC3XX_CONFIG_RNG_DRBG_ENTROPY_SIZE / 2)
+#else
+/**
+ * @brief Nonce size in bytes used to seed the configured RNG DRBG.
+ *
+ * HASH_DRBG and HMAC_DRBG keep the previous RNG wrapper behaviour by default:
+ * seed from one full entropy source sample and no nonce.
+ */
+#define CC3XX_CONFIG_RNG_DRBG_NONCE_SIZE (0U)
+#endif /* CC3XX_CONFIG_RNG_DRBG_CTR */
+#endif /* CC3XX_CONFIG_RNG_DRBG_NONCE_SIZE */
+
 /* Define function pointers to generically access DRBG functionalities */
 #if defined(CC3XX_CONFIG_RNG_DRBG_HMAC)
 typedef struct cc3xx_drbg_hmac_state_t drbg_state_t;
@@ -59,27 +101,34 @@ typedef cc3xx_err_t (*drbg_reseed_fn_t)(
     const uint8_t *entropy, size_t entropy_len,
     const uint8_t *additional_input, size_t additional_input_len);
 
+_Static_assert(CC3XX_CONFIG_RNG_DRBG_ENTROPY_SIZE != 0,
+               "cc3xx_config: RNG DRBG entropy size must be non-zero");
+
 /* Static state context of DRBG */
 static struct {
     drbg_state_t state;
     bool seed_done;
     const size_t entropy_size;
+    const size_t nonce_size;
     const drbg_init_fn_t init;
     const drbg_generate_fn_t generate;
     const drbg_reseed_fn_t reseed;
 } g_drbg = {.seed_done =  false,
 #if defined(CC3XX_CONFIG_RNG_DRBG_HMAC)
-    .entropy_size = CC3XX_ENTROPY_SIZE,
+    .entropy_size = CC3XX_CONFIG_RNG_DRBG_ENTROPY_SIZE,
+    .nonce_size = CC3XX_CONFIG_RNG_DRBG_NONCE_SIZE,
     .init = cc3xx_lowlevel_drbg_hmac_instantiate,
     .generate = cc3xx_lowlevel_drbg_hmac_generate,
     .reseed = cc3xx_lowlevel_drbg_hmac_reseed
 #elif defined(CC3XX_CONFIG_RNG_DRBG_CTR)
-    .entropy_size = CC3XX_DRBG_CTR_SEEDLEN,
+    .entropy_size = CC3XX_CONFIG_RNG_DRBG_ENTROPY_SIZE,
+    .nonce_size = CC3XX_CONFIG_RNG_DRBG_NONCE_SIZE,
     .init = cc3xx_lowlevel_drbg_ctr_init,
     .generate = cc3xx_lowlevel_drbg_ctr_generate,
     .reseed = cc3xx_lowlevel_drbg_ctr_reseed
 #elif defined(CC3XX_CONFIG_RNG_DRBG_HASH)
-    .entropy_size = CC3XX_ENTROPY_SIZE,
+    .entropy_size = CC3XX_CONFIG_RNG_DRBG_ENTROPY_SIZE,
+    .nonce_size = CC3XX_CONFIG_RNG_DRBG_NONCE_SIZE,
     .init = cc3xx_lowlevel_drbg_hash_init,
     .generate = cc3xx_lowlevel_drbg_hash_generate,
     .reseed = cc3xx_lowlevel_drbg_hash_reseed
@@ -140,25 +189,38 @@ static cc3xx_err_t xorshift_plus_128_lfsr(xorshift_plus_128_state_t *lfsr, uint6
 static cc3xx_err_t drbg_get_random(uint8_t *buf, size_t length)
 {
     cc3xx_err_t err;
-    uint32_t entropy[ROUND_UP(g_drbg.entropy_size, CC3XX_ENTROPY_SIZE) / sizeof(uint32_t)];
+    const size_t seed_size = g_drbg.entropy_size + g_drbg.nonce_size;
+    const size_t seed_buffer_size = ROUND_UP(seed_size, CC3XX_ENTROPY_SIZE);
+    const size_t entropy_buffer_size =
+        ROUND_UP(g_drbg.entropy_size, CC3XX_ENTROPY_SIZE);
+    uint32_t seed_material[seed_buffer_size / sizeof(uint32_t)];
+    const uint8_t *entropy = (const uint8_t *)seed_material;
+    const uint8_t *nonce = NULL;
+
+    if (g_drbg.nonce_size != 0) {
+        nonce = entropy + g_drbg.entropy_size;
+    }
 
     if (!g_drbg.seed_done) {
 
         /* Get entropy to initialize DRBG state */
-        err = cc3xx_lowlevel_get_entropy(entropy, sizeof(entropy));
+        err = cc3xx_lowlevel_get_entropy(seed_material, seed_buffer_size);
         if (err != CC3XX_ERR_SUCCESS) {
+            /* Clear any partial seed from the stack */
+            memset(seed_material, 0, sizeof(seed_material));
             return err;
         }
 
         /* Call the seeding API of the desired drbg */
         err = g_drbg.init(&g_drbg.state,
-                    (const uint8_t *)entropy, g_drbg.entropy_size, NULL, 0, NULL, 0);
+                    entropy, g_drbg.entropy_size, nonce,
+                    g_drbg.nonce_size, NULL, 0);
+        /* Clear the seed from the stack */
+        memset(seed_material, 0, sizeof(seed_material));
+
         if (err != CC3XX_ERR_SUCCESS) {
             return err;
         }
-
-        /* Clear the seed from the stack */
-        memset(entropy, 0, sizeof(entropy));
 
         g_drbg.seed_done = true;
     }
@@ -167,20 +229,22 @@ static cc3xx_err_t drbg_get_random(uint8_t *buf, size_t length)
     if (g_drbg.state.reseed_counter == UINT32_MAX) {
 
         /* Get entropy to re-seed DRBG state */
-        err = cc3xx_lowlevel_get_entropy(entropy, sizeof(entropy));
+        err = cc3xx_lowlevel_get_entropy(seed_material, entropy_buffer_size);
         if (err != CC3XX_ERR_SUCCESS) {
+            /* Clear any partial seed from the stack */
+            memset(seed_material, 0, sizeof(seed_material));
             return err;
         }
 
         err = g_drbg.reseed(&g_drbg.state,
-                    (const uint8_t *)entropy, g_drbg.entropy_size, NULL, 0);
+                    entropy, g_drbg.entropy_size, NULL, 0);
+
+        /* Clear the seed from the stack */
+        memset(seed_material, 0, sizeof(seed_material));
 
         if (err != CC3XX_ERR_SUCCESS) {
             goto cleanup;
         }
-
-        /* Clear the seed from the stack */
-        memset(entropy, 0, sizeof(entropy));
     }
 
     /* The DRBG requires the number of bits to generate, aligned to byte-sizes */
