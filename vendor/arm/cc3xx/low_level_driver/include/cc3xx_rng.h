@@ -10,12 +10,72 @@
 
 #include "cc3xx_error.h"
 
+/*
+ * Expose the configured DRBG state type only when callers need to provide
+ * persistent storage for it.
+ */
+
+#ifndef CC3XX_CONFIG_FILE
+#include "cc3xx_config.h"
+#else
+#include CC3XX_CONFIG_FILE
+#endif
+
+#ifdef CC3XX_CONFIG_PERSISTENT_DRBG_CONTEXT
+#if defined(CC3XX_CONFIG_RNG_DRBG_HMAC)
+#include "cc3xx_drbg_hmac.h"
+/**
+ * @brief Selected DRBG state type for the configured RNG backend.
+ */
+typedef struct cc3xx_drbg_hmac_state_t cc3xx_drbg_state_t;
+#elif defined(CC3XX_CONFIG_RNG_DRBG_CTR)
+#include "cc3xx_drbg_ctr.h"
+/**
+ * @brief Selected DRBG state type for the configured RNG backend.
+ */
+typedef struct cc3xx_drbg_ctr_state_t cc3xx_drbg_state_t;
+#elif defined(CC3XX_CONFIG_RNG_DRBG_HASH)
+#include "cc3xx_drbg_hash.h"
+/**
+ * @brief Selected DRBG state type for the configured RNG backend.
+ */
+typedef struct cc3xx_drbg_hash_state_t cc3xx_drbg_state_t;
+#endif
+#endif /* CC3XX_CONFIG_PERSISTENT_DRBG_CONTEXT */
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifdef CC3XX_CONFIG_PERSISTENT_DRBG_CONTEXT
+/**
+ * @brief Persistent DRBG state that may be stored outside the CC3XX driver.
+ *
+ * The CC3XX RNG driver normally keeps this state in static storage. Platforms
+ * that need the DRBG state to survive between boot stages can provide storage
+ * for this structure and pass it to cc3xx_use_persistent_drbg().
+ */
+struct cc3xx_drbg_persistent_context_t {
+    cc3xx_drbg_state_t state;
+    bool seed_done;
+};
+
+/**
+ * @brief Set the storage used for the DRBG state.
+ *
+ * The buffer must point to a struct cc3xx_drbg_persistent_context_t and remain
+ * valid while the RNG driver is in use.
+ *
+ * @param[in,out] buf      Buffer to use as persistent DRBG state.
+ * @param[in]     buf_size Size of the buffer in bytes.
+ *
+ * @return CC3XX_ERR_SUCCESS on success, another cc3xx_err_t on error.
+ */
+cc3xx_err_t cc3xx_use_persistent_drbg(void *buf, size_t buf_size);
 #endif
 
 /**
