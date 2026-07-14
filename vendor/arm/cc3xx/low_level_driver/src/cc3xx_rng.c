@@ -104,17 +104,8 @@ typedef cc3xx_err_t (*drbg_reseed_fn_t)(
 _Static_assert(CC3XX_CONFIG_RNG_DRBG_ENTROPY_SIZE != 0,
                "cc3xx_config: RNG DRBG entropy size must be non-zero");
 
-/* Use local DRBG storage unless the caller provides persistent storage. */
-#ifndef CC3XX_CONFIG_PERSISTENT_DRBG_CONTEXT
-struct cc3xx_drbg_persistent_context_t {
-    drbg_state_t state;
-    bool seed_done;
-};
-#endif /* CC3XX_CONFIG_PERSISTENT_DRBG_CONTEXT */
-
-/* Fixed DRBG configuration and pointer to mutable DRBG state. */
+/* Fixed DRBG configuration. */
 struct cc3xx_drbg_t {
-    struct cc3xx_drbg_persistent_context_t *persistent_context;
     const size_t entropy_size;
     const size_t nonce_size;
     const drbg_init_fn_t init;
@@ -122,12 +113,18 @@ struct cc3xx_drbg_t {
     const drbg_reseed_fn_t reseed;
 };
 
+/* Use local DRBG storage when persistent storage is disabled. */
+#ifndef CC3XX_CONFIG_PERSISTENT_DRBG_CONTEXT
 static struct cc3xx_drbg_persistent_context_t g_drbg_persistent_buf = {
     .seed_done = false,
 };
+static struct cc3xx_drbg_persistent_context_t *p_drbg_context =
+    &g_drbg_persistent_buf;
+#else
+static struct cc3xx_drbg_persistent_context_t *p_drbg_context;
+#endif /* CC3XX_CONFIG_PERSISTENT_DRBG_CONTEXT */
 
 static struct cc3xx_drbg_t g_drbg = {
-    .persistent_context = &g_drbg_persistent_buf,
 #if defined(CC3XX_CONFIG_RNG_DRBG_HMAC)
     .entropy_size = CC3XX_CONFIG_RNG_DRBG_ENTROPY_SIZE,
     .nonce_size = CC3XX_CONFIG_RNG_DRBG_NONCE_SIZE,
@@ -156,7 +153,7 @@ cc3xx_err_t cc3xx_use_persistent_drbg(void *buf, size_t buf_size)
         return CC3XX_ERR_INVALID_INPUT_LENGTH;
     }
 
-    g_drbg.persistent_context = buf;
+    p_drbg_context = buf;
 
     return CC3XX_ERR_SUCCESS;
 }
@@ -215,9 +212,6 @@ static cc3xx_err_t xorshift_plus_128_lfsr(xorshift_plus_128_state_t *lfsr, uint6
 
 static cc3xx_err_t drbg_get_random(uint8_t *buf, size_t length)
 {
-    struct cc3xx_drbg_persistent_context_t *persistent_context =
-        g_drbg.persistent_context;
-
     cc3xx_err_t err;
     const size_t seed_size = g_drbg.entropy_size + g_drbg.nonce_size;
     const size_t seed_buffer_size = ROUND_UP(seed_size, CC3XX_ENTROPY_SIZE);
@@ -231,7 +225,7 @@ static cc3xx_err_t drbg_get_random(uint8_t *buf, size_t length)
         nonce = entropy + g_drbg.entropy_size;
     }
 
-    if (!persistent_context->seed_done) {
+    if (!p_drbg_context->seed_done) {
 
         /* Get entropy to initialize DRBG state */
         err = cc3xx_lowlevel_get_entropy(seed_material, seed_buffer_size);
@@ -242,7 +236,7 @@ static cc3xx_err_t drbg_get_random(uint8_t *buf, size_t length)
         }
 
         /* Call the seeding API of the desired drbg */
-        err = g_drbg.init(&persistent_context->state,
+        err = g_drbg.init(&p_drbg_context->state,
                     entropy, g_drbg.entropy_size, nonce,
                     g_drbg.nonce_size, NULL, 0);
 
@@ -253,11 +247,11 @@ static cc3xx_err_t drbg_get_random(uint8_t *buf, size_t length)
             return err;
         }
 
-        persistent_context->seed_done = true;
+        p_drbg_context->seed_done = true;
     }
 
     /* Add re-seeding capabilities */
-    if (persistent_context->state.reseed_counter == UINT32_MAX) {
+    if (p_drbg_context->state.reseed_counter == UINT32_MAX) {
 
         /* Get entropy to re-seed DRBG state */
         err = cc3xx_lowlevel_get_entropy(seed_material, entropy_buffer_size);
@@ -267,7 +261,7 @@ static cc3xx_err_t drbg_get_random(uint8_t *buf, size_t length)
             return err;
         }
 
-        err = g_drbg.reseed(&persistent_context->state,
+        err = g_drbg.reseed(&p_drbg_context->state,
                     entropy, g_drbg.entropy_size, NULL, 0);
 
         /* Clear the seed from the stack */
@@ -279,7 +273,7 @@ static cc3xx_err_t drbg_get_random(uint8_t *buf, size_t length)
     }
 
     /* The DRBG requires the number of bits to generate, aligned to byte-sizes */
-    err = g_drbg.generate(&persistent_context->state, length * 8, buf, NULL, 0);
+    err = g_drbg.generate(&p_drbg_context->state, length * 8, buf, NULL, 0);
 
 cleanup:
     return err;

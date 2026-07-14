@@ -26,7 +26,6 @@ extern "C" {
  */
 #define CC3XX_ENTROPY_SIZE (CC3XX_TRNG_SAMPLE_SIZE)
 
-#ifdef CC3XX_CONFIG_PERSISTENT_ENTROPY_CONTEXT
 /**
  * @brief Mutable state of the SP800-90B entropy-source health tests.
  *
@@ -44,6 +43,7 @@ struct cc3xx_entropy_persistent_context_t {
     bool startup_done;              /*!< Whether the startup tests completed. */
 };
 
+#ifdef CC3XX_CONFIG_PERSISTENT_ENTROPY_CONTEXT
 /**
  * @brief Set the storage used for SP800-90B health-test state.
  *

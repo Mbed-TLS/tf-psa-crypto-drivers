@@ -109,21 +109,15 @@ static struct {
     SP800_90B_REPETITION_COUNT_CUTOFF_RATE
 };
 
-/* Use local health-test storage unless the caller provides persistent storage. */
+/* Use local health-test storage when persistent storage is disabled. */
+
 #ifndef CC3XX_CONFIG_PERSISTENT_ENTROPY_CONTEXT
-struct cc3xx_entropy_persistent_context_t {
-    size_t total_bits_count;        /*!< Number of total bits observed for the Adaptive Proportion Test window */
-    size_t number_of_0s;            /*!< Number of zeros observed in the Adaptive Proportion Test window */
-    size_t number_of_contiguous_0s; /*!< Number of contiguous zeros observed in the Repetition Count Test */
-    size_t number_of_contiguous_1s; /*!< Number of contiguous ones observed in the Repetition Count Test */
-    bool   startup_done;            /*!< Indicates whether a full collection on startup has been done already */
-};
-#endif /* CC3XX_CONFIG_PERSISTENT_ENTROPY_CONTEXT */
-
 static struct cc3xx_entropy_persistent_context_t g_entropy_tests_buf = {0};
-
-static struct cc3xx_entropy_persistent_context_t *g_entropy_tests =
+static struct cc3xx_entropy_persistent_context_t *p_entropy_tests =
     &g_entropy_tests_buf;
+#else
+static struct cc3xx_entropy_persistent_context_t *p_entropy_tests;
+#endif
 
 #ifdef CC3XX_CONFIG_PERSISTENT_ENTROPY_CONTEXT
 cc3xx_err_t cc3xx_use_persistent_entropy_context(void *buf, size_t buf_size)
@@ -133,7 +127,7 @@ cc3xx_err_t cc3xx_use_persistent_entropy_context(void *buf, size_t buf_size)
         return CC3XX_ERR_INVALID_INPUT_LENGTH;
     }
 
-    g_entropy_tests = buf;
+    p_entropy_tests = buf;
 
     return CC3XX_ERR_SUCCESS;
 }
@@ -271,7 +265,7 @@ static cc3xx_err_t startup_test(size_t entropy_byte_size)
 
         err = continuous_health_test(random_bits,
                                      entropy_byte_size / sizeof(uint32_t),
-                                     g_entropy_tests);
+                                     p_entropy_tests);
         if (err != CC3XX_ERR_SUCCESS) {
             break;
         }
@@ -306,13 +300,13 @@ cc3xx_err_t cc3xx_lowlevel_get_entropy(uint32_t *entropy, size_t entropy_len)
             return err;
         }
 
-        if (!g_entropy_tests->startup_done) {
+        if (!p_entropy_tests->startup_done) {
             /* Perform the extensive collection on startup */
             err = startup_test(CC3XX_TRNG_SAMPLE_SIZE);
             if (err != CC3XX_ERR_SUCCESS) {
                 goto cleanup;
             }
-            g_entropy_tests->startup_done = true;
+            p_entropy_tests->startup_done = true;
         }
 
         for (size_t i = 0; i < entropy_len / CC3XX_TRNG_SAMPLE_SIZE; i++) {
@@ -326,7 +320,7 @@ cc3xx_err_t cc3xx_lowlevel_get_entropy(uint32_t *entropy, size_t entropy_len)
             /* The entropy source is always in SP 800-90B mode, i.e. continuosly testing itself */
             err = continuous_health_test(&entropy[num_words],
                                          CC3XX_TRNG_SAMPLE_SIZE / sizeof(uint32_t),
-                                         g_entropy_tests);
+                                         p_entropy_tests);
             if (err != CC3XX_ERR_SUCCESS) {
                 goto cleanup;
             }
