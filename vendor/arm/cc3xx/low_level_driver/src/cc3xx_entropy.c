@@ -11,6 +11,7 @@
 #include CC3XX_CONFIG_FILE
 #endif
 
+#include "cc3xx_entropy.h"
 #include "cc3xx_error.h"
 
 #ifdef CC3XX_CONFIG_RNG_EXTERNAL_TRNG
@@ -108,14 +109,35 @@ static struct {
     SP800_90B_REPETITION_COUNT_CUTOFF_RATE
 };
 
-/* Static context of the entropy source continuous health tests */
-static struct health_tests_ctx_t {
+/* Use local health-test storage unless the caller provides persistent storage. */
+#ifndef CC3XX_CONFIG_PERSISTENT_ENTROPY_CONTEXT
+struct cc3xx_entropy_persistent_context_t {
     size_t total_bits_count;        /*!< Number of total bits observed for the Adaptive Proportion Test window */
     size_t number_of_0s;            /*!< Number of zeros observed in the Adaptive Proportion Test window */
     size_t number_of_contiguous_0s; /*!< Number of contiguous zeros observed in the Repetition Count Test */
     size_t number_of_contiguous_1s; /*!< Number of contiguous ones observed in the Repetition Count Test */
     bool   startup_done;            /*!< Indicates whether a full collection on startup has been done already */
-} g_entropy_tests = {0};
+};
+#endif /* CC3XX_CONFIG_PERSISTENT_ENTROPY_CONTEXT */
+
+static struct cc3xx_entropy_persistent_context_t g_entropy_tests_buf = {0};
+
+static struct cc3xx_entropy_persistent_context_t *g_entropy_tests =
+    &g_entropy_tests_buf;
+
+#ifdef CC3XX_CONFIG_PERSISTENT_ENTROPY_CONTEXT
+cc3xx_err_t cc3xx_use_persistent_entropy_context(void *buf, size_t buf_size)
+{
+    if (buf == NULL ||
+        buf_size < sizeof(struct cc3xx_entropy_persistent_context_t)) {
+        return CC3XX_ERR_INVALID_INPUT_LENGTH;
+    }
+
+    g_entropy_tests = buf;
+
+    return CC3XX_ERR_SUCCESS;
+}
+#endif /* CC3XX_CONFIG_PERSISTENT_ENTROPY_CONTEXT */
 
 /* See https://en.wikipedia.org/wiki/Hamming_weight */
 static size_t popcount32(uint32_t x)
@@ -213,7 +235,7 @@ static cc3xx_err_t adaptive_proportion_test(const uint32_t *buf,
 /* SP800-90B section 4.4 */
 static cc3xx_err_t continuous_health_test(const uint32_t *buf,
                                           size_t word_count,
-                                          struct health_tests_ctx_t *ctx)
+                                          struct cc3xx_entropy_persistent_context_t *ctx)
 {
     cc3xx_err_t err = repetition_count_test(
         buf, word_count, &(ctx->number_of_contiguous_0s), &(ctx->number_of_contiguous_1s));
@@ -249,7 +271,7 @@ static cc3xx_err_t startup_test(size_t entropy_byte_size)
 
         err = continuous_health_test(random_bits,
                                      entropy_byte_size / sizeof(uint32_t),
-                                     &g_entropy_tests);
+                                     g_entropy_tests);
         if (err != CC3XX_ERR_SUCCESS) {
             break;
         }
@@ -284,13 +306,13 @@ cc3xx_err_t cc3xx_lowlevel_get_entropy(uint32_t *entropy, size_t entropy_len)
             return err;
         }
 
-        if (!g_entropy_tests.startup_done) {
+        if (!g_entropy_tests->startup_done) {
             /* Perform the extensive collection on startup */
             err = startup_test(CC3XX_TRNG_SAMPLE_SIZE);
             if (err != CC3XX_ERR_SUCCESS) {
                 goto cleanup;
             }
-            g_entropy_tests.startup_done = true;
+            g_entropy_tests->startup_done = true;
         }
 
         for (size_t i = 0; i < entropy_len / CC3XX_TRNG_SAMPLE_SIZE; i++) {
@@ -304,7 +326,7 @@ cc3xx_err_t cc3xx_lowlevel_get_entropy(uint32_t *entropy, size_t entropy_len)
             /* The entropy source is always in SP 800-90B mode, i.e. continuosly testing itself */
             err = continuous_health_test(&entropy[num_words],
                                          CC3XX_TRNG_SAMPLE_SIZE / sizeof(uint32_t),
-                                         &g_entropy_tests);
+                                         g_entropy_tests);
             if (err != CC3XX_ERR_SUCCESS) {
                 goto cleanup;
             }
