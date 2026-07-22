@@ -25,6 +25,16 @@
 #include "cc3xx_rng_external_trng.h"
 #endif /* !CC3XX_CONFIG_RNG_EXTERNAL_TRNG */
 
+/**
+ * @brief Keep required functions available to external tooling.
+ */
+#ifdef CC3XX_CONFIG_EXPOSE_REQUIRED_FUNCTIONS
+#define CC3XX_ATTRIBUTE_ALWAYS_EXPOSED \
+    __attribute__((used, noinline, externally_visible))
+#else
+#define CC3XX_ATTRIBUTE_ALWAYS_EXPOSED
+#endif /* CC3XX_CONFIG_EXPOSE_REQUIRED_FUNCTIONS */
+
 #ifndef CC3XX_CONFIG_RNG_EXTERNAL_TRNG
 
 #define ROUND_UP(x, bound) ((((x) + bound - 1) / bound) * bound)
@@ -332,7 +342,8 @@ void cc3xx_lowlevel_noise_source_context_init(const struct cc3xx_noise_source_ct
 #endif /* CC3XX_CONFIG_RNG_EXTERNAL_TRNG */
 
 #ifndef CC3XX_CONFIG_RNG_EXTERNAL_TRNG
-cc3xx_err_t cc3xx_lowlevel_noise_source_init(const struct cc3xx_noise_source_ctx_t *ctx)
+cc3xx_err_t CC3XX_ATTRIBUTE_ALWAYS_EXPOSED
+cc3xx_lowlevel_noise_source_init(const struct cc3xx_noise_source_ctx_t *ctx)
 {
     assert(ctx != NULL);
     if (!(ctx->is_config_valid)) {
@@ -343,7 +354,8 @@ cc3xx_err_t cc3xx_lowlevel_noise_source_init(const struct cc3xx_noise_source_ctx
     return CC3XX_ERR_SUCCESS;
 }
 #else
-cc3xx_err_t cc3xx_lowlevel_noise_source_init(struct cc3xx_noise_source_ctx_t *ctx)
+cc3xx_err_t CC3XX_ATTRIBUTE_ALWAYS_EXPOSED
+cc3xx_lowlevel_noise_source_init(struct cc3xx_noise_source_ctx_t *ctx)
 {
     (void)ctx;
     trng_init();
