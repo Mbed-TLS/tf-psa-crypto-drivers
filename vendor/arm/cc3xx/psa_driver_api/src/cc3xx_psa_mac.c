@@ -23,10 +23,10 @@
 #include "cc3xx_psa_api_config.h"
 #else
 #include CC3XX_PSA_API_CONFIG_FILE
-#endif
+#endif /* CC3XX_PSA_API_CONFIG_FILE */
 #ifdef CC3XX_CRYPTO_OPAQUE_KEYS
 #include "cc3xx_opaque_keys.h"
-#endif
+#endif /* CC3XX_CRYPTO_OPAQUE_KEYS */
 /* ToDo: This needs to be sorted out at TF-M level
  * To be able to include the PSA style configuration
  */
@@ -50,6 +50,7 @@ static psa_status_t cmac_compute(const psa_key_attributes_t *attributes,
     size_t key_bits = psa_get_key_bits(attributes);
     size_t tag_len = PSA_MAC_LENGTH(key_type, key_bits, PSA_ALG_CMAC);
     const uint32_t *p_key = (const uint32_t *)key_buffer;
+    uint32_t local_mac[AES_BLOCK_SIZE / sizeof(uint32_t)];
 #ifdef CC3XX_CRYPTO_OPAQUE_KEYS
     cc3xx_aes_key_id_t key_id = CC3XX_AES_KEY_ID_USER_KEY;
 
@@ -95,13 +96,13 @@ static psa_status_t cmac_compute(const psa_key_attributes_t *attributes,
         cc3xx_lowlevel_aes_update_authed_data(input, input_length);
     }
 
-    err = cc3xx_lowlevel_aes_finish((uint32_t *)mac, NULL);
+    err = cc3xx_lowlevel_aes_finish(local_mac, NULL);
     if (err != CC3XX_ERR_SUCCESS) {
         return cc3xx_to_psa_err(err);
     }
 
     *mac_length = tag_len;
-
+    memcpy(mac, local_mac, *mac_length);
     cc3xx_lowlevel_aes_uninit();
 
     return PSA_SUCCESS;
@@ -189,19 +190,21 @@ static psa_status_t cmac_update(struct cc3xx_aes_state_t *state,
  *         corresponding MAC
  */
 static psa_status_t cmac_finish(const struct cc3xx_aes_state_t *state,
-                                uint32_t *output, size_t *output_length)
+                                uint8_t *output, size_t *output_length)
 {
     cc3xx_err_t err;
+    uint32_t local_output[AES_BLOCK_SIZE / sizeof(uint32_t)];
 
     cc3xx_lowlevel_aes_set_state(state);
 
-    err = cc3xx_lowlevel_aes_finish(output, NULL);
+    err = cc3xx_lowlevel_aes_finish(local_output, NULL);
     if (err != CC3XX_ERR_SUCCESS) {
         *output_length = 0;
         return cc3xx_to_psa_err(err);
     }
 
     *output_length = state->aes_tag_len;
+    memcpy(output, local_output, *output_length);
 
     cc3xx_lowlevel_aes_uninit();
     return PSA_SUCCESS;
@@ -248,10 +251,26 @@ static psa_status_t hmac_compute(size_t tag_len, const uint8_t *key_buffer,
         return PSA_ERROR_NOT_SUPPORTED;
     }
 
-    err = cc3xx_lowlevel_hmac_compute(tag_len, key_buffer, key_buffer_size, hash_alg_cc,
-                                      input, input_length,
-                                      (uint32_t *)mac, mac_size, mac_length);
-    return cc3xx_to_psa_err(err);
+    const size_t hash_length = PSA_HASH_LENGTH(hash_alg);
+
+    if (hash_length == 0U) {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+
+    CC3XX_ASSERT(mac_size >= tag_len);
+
+    uint32_t local_mac[hash_length / sizeof(uint32_t)];
+
+    err = cc3xx_lowlevel_hmac_compute(tag_len, key_buffer, key_buffer_size,
+                                      hash_alg_cc, input, input_length,
+                                      local_mac, sizeof(local_mac),
+                                      mac_length);
+    if (err != CC3XX_ERR_SUCCESS) {
+        return cc3xx_to_psa_err(err);
+    }
+
+    memcpy(mac, local_mac, *mac_length);
+    return PSA_SUCCESS;
 }
 
 /** @brief Setup an HMAC operation context with a given key and hash
@@ -390,6 +409,24 @@ psa_status_t cc3xx_mac_update(cc3xx_mac_operation_t *operation,
         return PSA_ERROR_INVALID_ARGUMENT;
     }
 }
+#if defined(PSA_WANT_ALG_HMAC) || defined(PSA_WANT_ALG_CMAC)
+static size_t mac_output_size(psa_algorithm_t alg)
+{
+#if defined(PSA_WANT_ALG_HMAC)
+    if (PSA_ALG_IS_HMAC(alg)) {
+        return PSA_HASH_LENGTH(alg);
+    }
+#endif /* PSA_WANT_ALG_HMAC */
+
+#if defined(PSA_WANT_ALG_CMAC)
+    if (PSA_ALG_FULL_LENGTH_MAC(alg) == PSA_ALG_CMAC) {
+        return AES_BLOCK_SIZE;
+    }
+#endif /* PSA_WANT_ALG_CMAC */
+
+    return 0;
+}
+#endif /* PSA_WANT_ALG_HMAC || PSA_WANT_ALG_CMAC */
 
 psa_status_t cc3xx_mac_sign_finish(cc3xx_mac_operation_t *operation, /* cppcheck-suppress constParameterPointer */
                                    uint8_t *mac, /* cppcheck-suppress constParameterPointer */
@@ -397,25 +434,39 @@ psa_status_t cc3xx_mac_sign_finish(cc3xx_mac_operation_t *operation, /* cppcheck
                                    size_t *mac_length) /* cppcheck-suppress constParameterPointer */
 {
     psa_status_t status;
-
     CC3XX_ASSERT(operation != NULL);
     CC3XX_ASSERT(mac != NULL);
     CC3XX_ASSERT(mac_length != NULL);
 
 #if defined(PSA_WANT_ALG_CMAC)
     if (PSA_ALG_FULL_LENGTH_MAC(operation->alg) == PSA_ALG_CMAC) {
-        status = cmac_finish(&(operation->cmac), (uint32_t *)mac, mac_length);
+        if (mac_size < operation->cmac.aes_tag_len) {
+            *mac_length = 0;
+            return PSA_ERROR_BUFFER_TOO_SMALL;
+        }
+        status = cmac_finish(&(operation->cmac), mac, mac_length);
     } else
 #endif /* PSA_WANT_ALG_CMAC */
 #if defined(PSA_WANT_ALG_HMAC)
     if (PSA_ALG_IS_HMAC(operation->alg)) {
-        status = cc3xx_lowlevel_hmac_finish(&(operation->hmac), (uint32_t *)mac, mac_size, mac_length);
+        const size_t hash_length = PSA_HASH_LENGTH(operation->alg);
+        if (hash_length == 0U) {
+            return PSA_ERROR_NOT_SUPPORTED;
+        }
+        uint32_t actual_mac[hash_length / sizeof(uint32_t)];
+
+        CC3XX_ASSERT(mac_size >= operation->hmac.tag_len);
+
+        status = cc3xx_lowlevel_hmac_finish(&(operation->hmac), actual_mac,
+                                            sizeof(actual_mac), mac_length);
+        if (status == PSA_SUCCESS) {
+            memcpy(mac, actual_mac, *mac_length);
+        }
     } else
 #endif /* PSA_WANT_ALG_HMAC */
     {
         status = PSA_ERROR_INVALID_ARGUMENT;
     }
-
     return status;
 }
 
@@ -423,11 +474,18 @@ psa_status_t cc3xx_mac_verify_finish(cc3xx_mac_operation_t *operation, /* cppche
                                      const uint8_t *mac, size_t mac_length)
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
+    CC3XX_ASSERT(operation != NULL);
+    CC3XX_ASSERT(mac != NULL);
 
 #if defined(PSA_WANT_ALG_CMAC) || defined(PSA_WANT_ALG_HMAC)
-    uint32_t actual_mac[SHA256_OUTPUT_SIZE / sizeof(uint32_t)]; /* needs to take into account both hash and mac */
+    const size_t hash_length = mac_output_size(operation->alg);
+    if (hash_length == 0U) {
+        return PSA_ERROR_BAD_STATE;
+    }
+    uint32_t actual_mac[hash_length / sizeof(uint32_t)];
     uint32_t diff;
-    uint8_t idx;
+    const uint8_t *actual_mac_bytes = (const uint8_t *)actual_mac;
+    size_t idx;
     size_t produced_mac_length = 0;
 
     if (mac_length > sizeof(actual_mac)) {
@@ -435,17 +493,17 @@ psa_status_t cc3xx_mac_verify_finish(cc3xx_mac_operation_t *operation, /* cppche
     }
 #endif /* PSA_WANT_ALG_CMAC || PSA_WANT_ALG_HMAC */
 
-    CC3XX_ASSERT(operation != NULL);
-    CC3XX_ASSERT(mac != NULL);
-
 #if defined(PSA_WANT_ALG_CMAC)
     if (PSA_ALG_FULL_LENGTH_MAC(operation->alg) == PSA_ALG_CMAC) {
-        status = cmac_finish(&(operation->cmac), actual_mac, &produced_mac_length);
+        status = cmac_finish(&(operation->cmac), (uint8_t *)actual_mac,
+                             &produced_mac_length);
     } else
 #endif /* PSA_WANT_ALG_CMAC */
 #if defined(PSA_WANT_ALG_HMAC)
     if (PSA_ALG_IS_HMAC(operation->alg)) {
-        status = cc3xx_lowlevel_hmac_finish(&(operation->hmac), actual_mac, mac_length, &produced_mac_length);
+        status = cc3xx_lowlevel_hmac_finish(&(operation->hmac), actual_mac,
+                                            sizeof(actual_mac),
+                                            &produced_mac_length);
     } else
 #endif /* PSA_WANT_ALG_HMAC */
     {
@@ -463,8 +521,8 @@ psa_status_t cc3xx_mac_verify_finish(cc3xx_mac_operation_t *operation, /* cppche
     }
 
     /* Check tag in "constant-time" */
-    for (diff = 0, idx = 0; idx < mac_length / sizeof(uint32_t); idx++) {
-        diff |= ((uint32_t *)mac)[idx] ^ actual_mac[idx];
+    for (diff = 0, idx = 0; idx < mac_length; idx++) {
+        diff |= mac[idx] ^ actual_mac_bytes[idx];
     }
 
     if (diff != 0) {
