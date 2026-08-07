@@ -252,10 +252,7 @@ static psa_status_t hmac_compute(size_t tag_len, const uint8_t *key_buffer,
     }
 
     const size_t hash_length = PSA_HASH_LENGTH(hash_alg);
-
-    if (hash_length == 0U) {
-        return PSA_ERROR_NOT_SUPPORTED;
-    }
+    CC3XX_ASSERT(hash_length > 0);
 
     CC3XX_ASSERT(mac_size >= tag_len);
 
