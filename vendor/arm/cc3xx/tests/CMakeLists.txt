@@ -77,12 +77,12 @@ target_sources(${CC3XX_TEST_TARGET_NAME}
         ./src/low_level_driver/test_lowlevel_hash.c
         ./src/cc3xx_test_aes.c
         ./src/low_level_driver/test_lowlevel_aes.c
-        ./src/cc3xx_test_chacha.c
-        ./src/low_level_driver/test_lowlevel_chacha.c
+        $<$<BOOL:${TEST_CC3XX_CHACHA}>:${CMAKE_CURRENT_SOURCE_DIR}/src/cc3xx_test_chacha.c>
+        $<$<BOOL:${TEST_CC3XX_CHACHA}>:${CMAKE_CURRENT_SOURCE_DIR}/src/low_level_driver/test_lowlevel_chacha.c>
         ./src/cc3xx_test_pka.c
         ./src/cc3xx_test_ecc.c
         ./src/cc3xx_test_ecdsa.c
-        ./src/cc3xx_test_drbg.c
+        $<$<BOOL:${TEST_CC3XX_DRBG}>:${CMAKE_CURRENT_SOURCE_DIR}/src/cc3xx_test_drbg.c>
         ./src/cc3xx_test_dpa.c
         ./src/cc3xx_test_rng.c
         ./src/cc3xx_test_utils.c
