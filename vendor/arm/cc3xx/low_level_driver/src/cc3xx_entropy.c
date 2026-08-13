@@ -283,7 +283,6 @@ static cc3xx_err_t startup_test(size_t entropy_byte_size)
 cc3xx_err_t cc3xx_lowlevel_get_entropy(uint32_t *entropy, size_t entropy_len)
 {
     cc3xx_err_t err;
-    size_t num_words = 0;
     bool retry = false;
 
     assert((entropy_len % CC3XX_TRNG_SAMPLE_SIZE) == 0);
@@ -295,6 +294,8 @@ cc3xx_err_t cc3xx_lowlevel_get_entropy(uint32_t *entropy, size_t entropy_len)
     }
 
     do {
+        size_t num_words = 0;
+
         /* Initialise the Noise Source */
         err = cc3xx_lowlevel_noise_source_init(&g_trng_ctx);
         if (err != CC3XX_ERR_SUCCESS) {
