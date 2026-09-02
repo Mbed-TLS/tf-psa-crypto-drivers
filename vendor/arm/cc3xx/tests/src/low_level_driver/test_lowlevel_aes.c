@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2023-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -11,6 +11,142 @@
 #include "cc3xx_test_assert.h"
 
 #include <string.h>
+
+/* AES-CCM non-tunnelling mode helpers.
+ *
+ * Tunnelling performs CTR encryption/decryption and CBC-MAC tag calculation
+ * together. Without tunnelling, cc3xx_lowlevel_aes_update() and
+ * cc3xx_lowlevel_aes_finish() only calculate or verify the tag, so the CTR
+ * operation must be performed separately.
+ */
+#if !defined(CC3XX_CONFIG_AES_TUNNELLING_ENABLE) && \
+    defined(CC3XX_CONFIG_AES_CCM_ENABLE)
+static int aes_test_lowlevel_ccm_ctr_crypt(
+    struct aes_test_data_t *data,
+    const struct aes_test_mode_data_t *mode_data,
+    cc3xx_aes_mode_t mode,
+    cc3xx_aes_keysize_t key_size,
+    const uint8_t *input,
+    size_t input_len,
+    uint8_t *output,
+    size_t output_size)
+{
+    uint32_t ctr[AES_BLOCK_SIZE / sizeof(uint32_t)] = {0};
+    cc3xx_err_t err;
+    int rc;
+
+    if (mode != CC3XX_AES_MODE_CCM || input_len == 0) {
+        return 0;
+    }
+
+    c3xx_lowlevel_aes_ccm_init_ctr((uint8_t *)ctr, mode_data->iv, mode_data->iv_len);
+
+    err = cc3xx_lowlevel_aes_init(
+        CC3XX_AES_DIRECTION_ENCRYPT, CC3XX_AES_MODE_CTR,
+        CC3XX_AES_KEY_ID_USER_KEY,
+        (uint32_t *)cc3xx_test_aes_get_key(key_size, data), key_size,
+        ctr, sizeof(ctr));
+    cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+
+    cc3xx_lowlevel_aes_set_output_buffer(output, output_size);
+    err = cc3xx_lowlevel_aes_update(input, input_len);
+    cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+
+    err = cc3xx_lowlevel_aes_finish(NULL, NULL);
+    cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+
+    rc = 0;
+cleanup:
+    cc3xx_lowlevel_aes_uninit();
+
+    return rc;
+}
+
+int aes_test_lowlevel_ccm_non_tunnelling_encrypt_decrypt(
+    struct aes_test_data_t *data,
+    cc3xx_aes_mode_t mode,
+    cc3xx_aes_keysize_t key_size)
+{
+    uint32_t ciphertext[CC3XX_TEST_AES_PLAINTEXT_MAX_LEN / sizeof(uint32_t)] = {0};
+    uint32_t plaintext[CC3XX_TEST_AES_PLAINTEXT_MAX_LEN / sizeof(uint32_t)] = {0};
+    uint32_t tag[CC3XX_TEST_AES_TAG_MAX_LEN / sizeof(uint32_t)] = {0};
+    struct aes_test_mode_data_t mode_data;
+    cc3xx_err_t err;
+    int rc;
+
+    memcpy(&mode_data, cc3xx_test_aes_get_mode_data(mode, data), sizeof(mode_data));
+
+    err = cc3xx_lowlevel_aes_init(CC3XX_AES_DIRECTION_ENCRYPT, mode,
+                         CC3XX_AES_KEY_ID_USER_KEY,
+                         (uint32_t *)cc3xx_test_aes_get_key(key_size, data),
+                         key_size, (uint32_t *)mode_data.iv, mode_data.iv_len);
+    cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+
+    cc3xx_lowlevel_aes_set_output_buffer((uint8_t *)ciphertext, sizeof(ciphertext));
+    cc3xx_lowlevel_aes_set_tag_len(16);
+    cc3xx_lowlevel_aes_set_data_len(data->plaintext_len, data->auth_data_len);
+
+    if (data->auth_data_len != 0) {
+        cc3xx_lowlevel_aes_update_authed_data(data->auth_data, data->auth_data_len);
+    }
+
+    if (data->plaintext_len != 0) {
+        err = cc3xx_lowlevel_aes_update(data->plaintext, data->plaintext_len);
+        cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+    }
+
+    err = cc3xx_lowlevel_aes_finish(tag, NULL);
+    cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+
+    rc = aes_test_lowlevel_ccm_ctr_crypt(
+        data, &mode_data, mode, key_size, data->plaintext,
+        data->plaintext_len, (uint8_t *)ciphertext, sizeof(ciphertext));
+    if (rc != 0) {
+        goto cleanup;
+    }
+
+    rc = aes_test_lowlevel_ccm_ctr_crypt(
+        data, &mode_data, mode, key_size, (uint8_t *)ciphertext,
+        data->plaintext_len, (uint8_t *)plaintext, sizeof(plaintext));
+    if (rc != 0) {
+        goto cleanup;
+    }
+
+    err = cc3xx_lowlevel_aes_init(CC3XX_AES_DIRECTION_DECRYPT, mode,
+                         CC3XX_AES_KEY_ID_USER_KEY,
+                         (uint32_t *)cc3xx_test_aes_get_key(key_size, data),
+                         key_size, (uint32_t *)mode_data.iv, mode_data.iv_len);
+    cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+
+    cc3xx_lowlevel_aes_set_output_buffer((uint8_t *)plaintext, sizeof(plaintext));
+    cc3xx_lowlevel_aes_set_tag_len(16);
+    cc3xx_lowlevel_aes_set_data_len(data->plaintext_len, data->auth_data_len);
+
+    if (data->auth_data_len != 0) {
+        cc3xx_lowlevel_aes_update_authed_data(data->auth_data, data->auth_data_len);
+    }
+
+    err = cc3xx_lowlevel_aes_update((uint8_t *)plaintext,
+                                    data->plaintext_len);
+    cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+
+    err = cc3xx_lowlevel_aes_finish(tag, NULL);
+    cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+
+    if (mode != CC3XX_AES_MODE_CMAC) {
+        cc3xx_test_assert(memcmp(plaintext, data->plaintext,
+                                 data->plaintext_len) == 0);
+    }
+
+    rc = 0;
+cleanup:
+    cc3xx_lowlevel_aes_uninit();
+
+    return rc;
+}
+#endif /* CC3XX_CONFIG_AES_CCM_ENABLE &&
+        * !CC3XX_CONFIG_AES_TUNNELLING_ENABLE
+        */
 
 int aes_test_lowlevel_encrypt_decrypt(struct aes_test_data_t *data,
                                       cc3xx_aes_mode_t mode,
@@ -590,4 +726,3 @@ cleanup:
 
     return rc;
 }
-

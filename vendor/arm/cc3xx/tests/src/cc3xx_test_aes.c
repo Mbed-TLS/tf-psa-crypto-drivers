@@ -1413,6 +1413,15 @@ static int run_all_aes_tests(struct aes_test_data_t *data, cc3xx_aes_keysize_t k
     }
 #endif /* !CC3XX_CONFIG_AES_GCM_VARIABLE_IV_ENABLE */
 
+#if defined(CC3XX_CONFIG_AES_CCM_ENABLE) && \
+    !defined(CC3XX_CONFIG_AES_TUNNELLING_ENABLE)
+    if (mode == CC3XX_AES_MODE_CCM) {
+        return aes_test_lowlevel_ccm_non_tunnelling_encrypt_decrypt(data, mode, key_size);
+    }
+#endif /* CC3XX_CONFIG_AES_CCM_ENABLE &&
+        * !CC3XX_CONFIG_AES_TUNNELLING_ENABLE
+        */
+
     rc |= aes_test_lowlevel_oneshot_encrypt(data, mode, key_size);
     rc |= aes_test_lowlevel_oneshot_decrypt(data, mode, key_size);
     rc |= aes_test_lowlevel_encrypt_decrypt(data, mode, key_size);
@@ -1495,12 +1504,11 @@ CREATE_AES_TESTSUITE(CC3XX_AES_KEYSIZE_192, CC3XX_AES_MODE_CMAC);
 CREATE_AES_TESTSUITE(CC3XX_AES_KEYSIZE_256, CC3XX_AES_MODE_CMAC);
 #endif /* CC3XX_CONFIG_AES_CMAC_ENABLE */
 
-#if defined(CC3XX_CONFIG_AES_CCM_ENABLE) && \
-    defined(CC3XX_CONFIG_AES_TUNNELLING_ENABLE)
+#ifdef CC3XX_CONFIG_AES_CCM_ENABLE
 CREATE_AES_TESTSUITE(CC3XX_AES_KEYSIZE_128, CC3XX_AES_MODE_CCM);
 CREATE_AES_TESTSUITE(CC3XX_AES_KEYSIZE_192, CC3XX_AES_MODE_CCM);
 CREATE_AES_TESTSUITE(CC3XX_AES_KEYSIZE_256, CC3XX_AES_MODE_CCM);
-#endif /* CC3XX_CONFIG_AES_CCM_ENABLE && CC3XX_CONFIG_AES_TUNNELLING_ENABLE */
+#endif /* CC3XX_CONFIG_AES_CCM_ENABLE */
 
 void add_cc3xx_aes_tests_to_testsuite(struct test_suite_t *p_ts, uint32_t ts_size)
 {
@@ -1534,10 +1542,9 @@ void add_cc3xx_aes_tests_to_testsuite(struct test_suite_t *p_ts, uint32_t ts_siz
     cc3xx_add_tests_to_testsuite(&aes_CC3XX_AES_KEYSIZE_256CC3XX_AES_MODE_CMAC_tests, 1, p_ts, ts_size);
 #endif /* CC3XX_CONFIG_AES_CMAC_ENABLE */
 
-#if defined(CC3XX_CONFIG_AES_CCM_ENABLE) && \
-    defined(CC3XX_CONFIG_AES_TUNNELLING_ENABLE)
+#ifdef CC3XX_CONFIG_AES_CCM_ENABLE
     cc3xx_add_tests_to_testsuite(&aes_CC3XX_AES_KEYSIZE_128CC3XX_AES_MODE_CCM_tests, 1, p_ts, ts_size);
     cc3xx_add_tests_to_testsuite(&aes_CC3XX_AES_KEYSIZE_192CC3XX_AES_MODE_CCM_tests, 1, p_ts, ts_size);
     cc3xx_add_tests_to_testsuite(&aes_CC3XX_AES_KEYSIZE_256CC3XX_AES_MODE_CCM_tests, 1, p_ts, ts_size);
-#endif /* CC3XX_CONFIG_AES_CCM_ENABLE && CC3XX_CONFIG_AES_TUNNELLING_ENABLE */
+#endif /* CC3XX_CONFIG_AES_CCM_ENABLE */
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2023-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -17,6 +17,16 @@ extern "C" {
 int aes_test_lowlevel_encrypt_decrypt(struct aes_test_data_t *data,
                                       cc3xx_aes_mode_t mode,
                                       cc3xx_aes_keysize_t key_size);
+
+#if defined(CC3XX_CONFIG_AES_CCM_ENABLE) && \
+    !defined(CC3XX_CONFIG_AES_TUNNELLING_ENABLE)
+int aes_test_lowlevel_ccm_non_tunnelling_encrypt_decrypt(
+    struct aes_test_data_t *data,
+    cc3xx_aes_mode_t mode,
+    cc3xx_aes_keysize_t key_size);
+#endif /* CC3XX_CONFIG_AES_CCM_ENABLE &&
+        * !CC3XX_CONFIG_AES_TUNNELLING_ENABLE
+        */
 
 int aes_test_lowlevel_oneshot_decrypt(struct aes_test_data_t *data,
                                       cc3xx_aes_mode_t mode,
