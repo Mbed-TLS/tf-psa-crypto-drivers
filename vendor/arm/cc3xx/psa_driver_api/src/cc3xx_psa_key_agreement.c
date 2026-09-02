@@ -102,11 +102,14 @@ psa_status_t cc3xx_key_agreement(
                &publ_key[1 + pub_key_x_sz], pub_key_y_sz);
 
         if (padding_size != 0 || ((uintptr_t)priv_key & (sizeof(uint32_t) - 1)) != 0) {
-                cc3xx_dpa_hardened_byte_copy((uint8_t *)priv_key_local + padding_size, priv_key, priv_key_size);
-            } else {
-                cc3xx_dpa_hardened_word_copy(priv_key_local, (const uint32_t *)priv_key, sizeof(priv_key_local) / sizeof(uint32_t));
-            }
-            
+            cc3xx_dpa_hardened_byte_copy((uint8_t *)priv_key_local + padding_size,
+                                         priv_key, priv_key_size);
+        } else {
+            cc3xx_dpa_hardened_word_copy(priv_key_local,
+                                         (const uint32_t *)priv_key,
+                                         sizeof(priv_key_local) / sizeof(uint32_t));
+        }
+
         err = cc3xx_lowlevel_ecdh(curve_id, priv_key_local, modulus_sz,
                     pub_key_x_local, modulus_sz,
                     pub_key_y_local, modulus_sz,
@@ -121,10 +124,14 @@ psa_status_t cc3xx_key_agreement(
         if (output_size < shared_secret_sz - padding_size) {
             status = PSA_ERROR_BUFFER_TOO_SMALL;
         } else {
-            if(padding_size != 0 || ((uintptr_t)output & (sizeof(uint32_t) - 1)) != 0 ) {
-                cc3xx_dpa_hardened_byte_copy(output,(const uint8_t *)shared_secret_local + padding_size, component_sz);
+            if (padding_size != 0 || ((uintptr_t)output & (sizeof(uint32_t) - 1)) != 0) {
+                cc3xx_dpa_hardened_byte_copy(
+                    output, (const uint8_t *)shared_secret_local + padding_size,
+                    component_sz);
             } else {
-                cc3xx_dpa_hardened_word_copy(output, shared_secret_local, component_sz / sizeof(uint32_t));
+                cc3xx_dpa_hardened_word_copy(
+                    (uint32_t *)output, shared_secret_local,
+                    component_sz / sizeof(uint32_t));
             }
             *output_length = component_sz;
             status = PSA_SUCCESS;

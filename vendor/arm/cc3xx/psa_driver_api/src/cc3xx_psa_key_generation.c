@@ -61,7 +61,7 @@ psa_status_t cc3xx_generate_key(const psa_key_attributes_t *attributes,
                 return PSA_ERROR_NOT_SUPPORTED;
             }
             const size_t modulus_sz = cc3xx_lowlevel_ec_get_modulus_size_from_curve(curve_id);
-            
+
             /* Local scratch with the required alignment */
             uint32_t key_buffer_local[
                 CEIL_ALLOC_SZ(PSA_KEY_EXPORT_ECC_KEY_PAIR_MAX_SIZE(key_bits), sizeof(uint32_t))];
@@ -81,11 +81,17 @@ psa_status_t cc3xx_generate_key(const psa_key_attributes_t *attributes,
             }
 
             /* Copy the generated key back in the output buffer */
-           assert(!(gen_key_sz % sizeof(uint32_t)));
-           if (padding_sz != 0 || ((uintptr_t)key_buffer & (sizeof(uint32_t) - 1)) != 0) {
-                cc3xx_dpa_hardened_byte_copy(key_buffer, (uint8_t *)key_buffer_local + padding_sz, component_sz);
+            assert(!(gen_key_sz % sizeof(uint32_t)));
+            if (padding_sz != 0 || ((uintptr_t)key_buffer & (sizeof(uint32_t) - 1)) != 0) {
+                cc3xx_dpa_hardened_byte_copy(
+                    key_buffer,
+                    (uint8_t *)key_buffer_local + padding_sz,
+                    component_sz);
             } else {
-                cc3xx_dpa_hardened_word_copy((uint32_t *)key_buffer, key_buffer_local, component_sz / sizeof(uint32_t));
+                cc3xx_dpa_hardened_word_copy(
+                    (uint32_t *)key_buffer,
+                    key_buffer_local,
+                    component_sz / sizeof(uint32_t));
             }
             *key_buffer_length = component_sz;
 
@@ -148,11 +154,11 @@ psa_status_t cc3xx_export_public_key(const psa_key_attributes_t *attributes,
 
         const size_t modulus_sz = cc3xx_lowlevel_ec_get_modulus_size_from_curve(curve_id);
         const size_t component_sz = PSA_BITS_TO_BYTES(key_bits);
-        
+
         CC3XX_ASSERT(modulus_sz >= component_sz);
 
         const size_t padding_sz = modulus_sz - component_sz;
-    
+
         /* Scratch aligned to 32 bits and big enough for the worst case scenario */
         uint32_t scratch_x[modulus_sz / sizeof(uint32_t)];
         uint32_t scratch_y[modulus_sz / sizeof(uint32_t)];
@@ -164,10 +170,15 @@ psa_status_t cc3xx_export_public_key(const psa_key_attributes_t *attributes,
             memset(key_buffer_local, 0, sizeof(key_buffer_local));
         }
 
-        if (padding_sz != 0 || ((uintptr_t)key_buffer & (sizeof(uint32_t) - 1)) != 0) {
-            cc3xx_dpa_hardened_byte_copy((uint8_t *)key_buffer_local + padding_sz, key_buffer, component_sz);
+        if (padding_sz != 0 ||
+            ((uintptr_t)key_buffer & (sizeof(uint32_t) - 1)) != 0) {
+            cc3xx_dpa_hardened_byte_copy(
+                (uint8_t *)key_buffer_local + padding_sz,
+                key_buffer, component_sz);
         } else {
-            cc3xx_dpa_hardened_word_copy(key_buffer_local, (uint32_t *)key_buffer, component_sz / sizeof(uint32_t));
+            cc3xx_dpa_hardened_word_copy(
+                key_buffer_local, (uint32_t *)key_buffer,
+                component_sz / sizeof(uint32_t));
         }
 
         err = cc3xx_lowlevel_ecdsa_getpub(

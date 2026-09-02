@@ -93,13 +93,13 @@ static psa_status_t ecdsa_sign(bool is_deterministic, cc3xx_ec_curve_id_t curve_
     if (padding_size > 0) {
         memset(key_buf, 0, sizeof(key_buf));
     }
-   
+
     if (padding_size != 0 || ((uintptr_t)key & (sizeof(uint32_t) - 1)) != 0) {
         cc3xx_dpa_hardened_byte_copy((uint8_t *)key_buf + padding_size, key, component_sz);
     } else {
         cc3xx_dpa_hardened_word_copy(key_buf, (uint32_t *)key, component_sz / sizeof(uint32_t));
-    }   
-   
+    }
+
     if (is_deterministic) {
 
         err = cc3xx_lowlevel_ecdsa_sign_deterministic(curve_id,
@@ -182,10 +182,11 @@ static psa_status_t ecdsa_verify(const psa_key_attributes_t *attributes, cc3xx_e
     const size_t modulus_sz = cc3xx_lowlevel_ec_get_modulus_size_from_curve(curve_id);
 
     psa_key_bits_t key_bits = psa_get_key_bits(attributes);
+
     if (sig_length != PSA_ECDSA_SIGNATURE_SIZE(key_bits)) {
         return PSA_ERROR_INVALID_SIGNATURE;
     }
-    
+
     uint32_t sig_r[modulus_sz / sizeof(uint32_t)];
     uint32_t sig_s[modulus_sz / sizeof(uint32_t)];
 

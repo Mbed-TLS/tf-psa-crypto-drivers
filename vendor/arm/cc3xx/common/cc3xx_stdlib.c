@@ -47,7 +47,7 @@ void cc3xx_dpa_hardened_byte_copy(volatile uint8_t *dst,
         dst[idx] = src[idx];
     }
 #endif
-}                            
+}
 
 /* The CC3XX driver uses word-aligned copies through this function when required.
  * If DPA mitigations are enabled, the copy shuffles words randomly on copy,

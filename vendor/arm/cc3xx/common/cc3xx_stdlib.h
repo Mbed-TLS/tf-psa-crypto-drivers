@@ -43,7 +43,7 @@ void cc3xx_dpa_hardened_word_copy(volatile uint32_t *dst,
  * @param[in]  byte_count        The amount of bytes to copy.
  */
 void cc3xx_dpa_hardened_byte_copy(volatile uint8_t *dst,
-                                  volatile const uint8_t *src, size_t byte_count);                                  
+                                  volatile const uint8_t *src, size_t byte_count);
 /**
  * @brief Securely erases the buffer pointed by buf by overwriting it with random values. Assumes
  *        the size of the buffer in bytes is a multiple of 4
