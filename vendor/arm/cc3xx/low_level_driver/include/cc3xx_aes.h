@@ -285,7 +285,7 @@ void cc3xx_lowlevel_aes_uninit(void);
  * @param[in]     nonce_size      Size of the nonce in bytes.
  *
  */
-void c3xx_lowlevel_aes_ccm_init_ctr(uint8_t *ctr, const uint8_t *nonce, size_t nonce_size);
+void cc3xx_lowlevel_aes_ccm_init_ctr(uint8_t *ctr, const uint8_t *nonce, size_t nonce_size);
 
 /**
  * @brief                         Increment the AES-CCM counter block by a specified
@@ -299,7 +299,7 @@ void c3xx_lowlevel_aes_ccm_init_ctr(uint8_t *ctr, const uint8_t *nonce, size_t n
  *                                end of the block. The increment is applied in big-endian
  *                                byte order and written back to the correct offset.
  */
-void c3xx_lowlevel_aes_ccm_incr_ctr(uint8_t *ctr, const size_t incr_val);
+void cc3xx_lowlevel_aes_ccm_incr_ctr(uint8_t *ctr, const size_t incr_val);
 
 
 #endif /* !CC3XX_CONFIG_AES_TUNNELLING_ENABLE && CC3XX_CONFIG_AES_CCM_ENABLE */

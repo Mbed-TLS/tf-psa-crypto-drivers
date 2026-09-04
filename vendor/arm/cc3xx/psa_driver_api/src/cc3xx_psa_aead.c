@@ -223,7 +223,7 @@ static psa_status_t aead_crypt(
 
 #if !defined(CC3XX_CONFIG_AES_TUNNELLING_ENABLE) && defined(PSA_WANT_ALG_CCM)
         if (ctr_required) {
-            c3xx_lowlevel_aes_ccm_init_ctr(ctr, nonce, nonce_length);
+            cc3xx_lowlevel_aes_ccm_init_ctr(ctr, nonce, nonce_length);
 
             /* As AES CBC-MAC computes the tag on plaintext data,
              * AES CTR decryption should come beforehand
@@ -547,7 +547,7 @@ static psa_status_t cc3xx_aead_ccm_ctr_update(
         *output_length += processed_bytes;
 
         if (counter_incr_val > 0) {
-            c3xx_lowlevel_aes_ccm_incr_ctr((uint8_t *)state->ctr, counter_incr_val);
+            cc3xx_lowlevel_aes_ccm_incr_ctr((uint8_t *)state->ctr, counter_incr_val);
         }
 
         return PSA_SUCCESS;

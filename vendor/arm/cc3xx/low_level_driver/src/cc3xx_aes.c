@@ -804,7 +804,7 @@ static void ccm_calc_iv(bool from_auth)
 }
 
 #ifndef CC3XX_CONFIG_AES_TUNNELLING_ENABLE
-void c3xx_lowlevel_aes_ccm_init_ctr(uint8_t *ctr, const uint8_t *nonce, size_t nonce_size)
+void cc3xx_lowlevel_aes_ccm_init_ctr(uint8_t *ctr, const uint8_t *nonce, size_t nonce_size)
 {
     /* The formatting of the counter block is [Flags None [i]8q].
      * q is the byte length of the binary representation of the byte length of the payload,
@@ -825,7 +825,7 @@ void c3xx_lowlevel_aes_ccm_init_ctr(uint8_t *ctr, const uint8_t *nonce, size_t n
     ctr[AES_BLOCK_SIZE - 1] = 0x1;
 }
 
-void c3xx_lowlevel_aes_ccm_incr_ctr(uint8_t *ctr, const size_t incr_val)
+void cc3xx_lowlevel_aes_ccm_incr_ctr(uint8_t *ctr, const size_t incr_val)
 {
     /* The formatting of the counter block is [Flags None [i]8q].
      * q is the byte length of the binary representation of the byte length of the payload,

@@ -39,7 +39,7 @@ static int aes_test_lowlevel_ccm_ctr_crypt(
         return 0;
     }
 
-    c3xx_lowlevel_aes_ccm_init_ctr((uint8_t *)ctr, mode_data->iv, mode_data->iv_len);
+    cc3xx_lowlevel_aes_ccm_init_ctr((uint8_t *)ctr, mode_data->iv, mode_data->iv_len);
 
     err = cc3xx_lowlevel_aes_init(
         CC3XX_AES_DIRECTION_ENCRYPT, CC3XX_AES_MODE_CTR,
