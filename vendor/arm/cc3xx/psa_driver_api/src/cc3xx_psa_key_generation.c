@@ -154,7 +154,12 @@ psa_status_t cc3xx_export_public_key(const psa_key_attributes_t *attributes,
 
         const size_t modulus_sz = cc3xx_lowlevel_ec_get_modulus_size_from_curve(curve_id);
         const size_t component_sz = PSA_BITS_TO_BYTES(key_bits);
+        const size_t pb_key_sz = 1 + 2 * component_sz;
 
+        if (pb_key_sz > data_size) {
+            return PSA_ERROR_BUFFER_TOO_SMALL;
+        }
+        
         CC3XX_ASSERT(modulus_sz >= component_sz);
 
         const size_t padding_sz = modulus_sz - component_sz;
@@ -194,7 +199,7 @@ psa_status_t cc3xx_export_public_key(const psa_key_attributes_t *attributes,
         data[0] = 0x04;
         memcpy(&data[1], (const uint8_t *)scratch_x + padding_sz, component_sz);
         memcpy(&data[1 + component_sz], (const uint8_t *)scratch_y + padding_sz, component_sz);
-        *data_length = 1 + 2 * component_sz;
+        *data_length = pb_key_sz;
 
         return PSA_SUCCESS;
 
