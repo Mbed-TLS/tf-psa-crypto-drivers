@@ -14,6 +14,24 @@
 #define IPAD_PATTERN (0x36363636UL)
 #define OPAD_PATTERN (0x5c5c5c5cUL)
 
+static void copy_hmac_key(uint32_t *dst, const uint8_t *key, size_t key_size)
+{
+    size_t word_count = key_size / sizeof(uint32_t);
+
+    if (((uintptr_t)key & (sizeof(uint32_t) - 1)) == 0) {
+        cc3xx_dpa_hardened_word_copy(dst, (const uint32_t *)key,
+                                     word_count);
+        return;
+    }
+
+    uint32_t aligned_key[CC3XX_HMAC_BLOCK_SIZE / sizeof(uint32_t)];
+
+    memcpy(aligned_key, key, key_size);
+    cc3xx_dpa_hardened_word_copy(dst, aligned_key, word_count);
+    cc3xx_secure_erase_buffer(aligned_key,
+                              CC3XX_HMAC_BLOCK_SIZE / sizeof(uint32_t));
+}
+
 cc3xx_err_t cc3xx_lowlevel_hmac_compute(
     size_t tag_len,
     const uint8_t *key,
@@ -50,7 +68,7 @@ cc3xx_err_t cc3xx_lowlevel_hmac_compute(
         cc3xx_lowlevel_hash_finish(block, CC3XX_HASH_LENGTH(alg));
     } else if (key_size) {
         assert((key_size & 0b11) == 0);
-        cc3xx_dpa_hardened_word_copy(block, (uint32_t *)key, key_size / sizeof(uint32_t));
+        copy_hmac_key(block, key, key_size);
     }
 
     /* H(K ^ ipad) */
@@ -138,7 +156,7 @@ cc3xx_err_t cc3xx_lowlevel_hmac_set_key(
         cc3xx_lowlevel_hash_finish(state->key, CC3XX_HASH_LENGTH(alg));
     } else if (key_size) {
         assert((key_size & 0b11) == 0);
-        cc3xx_dpa_hardened_word_copy(state->key, (uint32_t *)key, key_size / sizeof(uint32_t));
+        copy_hmac_key(state->key, key, key_size);
     }
 
     /* H(K ^ ipad) */
