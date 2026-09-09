@@ -72,7 +72,10 @@ static size_t streaming_accumulate(
     size_t written_blocks = 0;
     size_t i = 0;
 
-    while (i < input_len) {
+    /* Stop consuming input once the output is full. Otherwise complete
+     * blocks can remain buffered after the caller's input is exhausted.
+     */
+    while ((i < input_len) && (written_blocks < MAX_BLOCKS_STREAMABLE)) {
         /* Consume input as much as possible */
         while ((i < input_len) && (acc->count < sizeof(acc->buffer))) {
             write_ring_buffer(acc, input[i++]);
@@ -85,10 +88,6 @@ static size_t streaming_accumulate(
             }
             written_blocks++;
         }
-
-        /* We have either extracted all that we can or we filled the buffer, so leave */
-        if ((acc->count == sizeof(acc->buffer)) && (written_blocks == MAX_BLOCKS_STREAMABLE))
-            break;
     }
 
     *consumed_input = i;
@@ -426,12 +425,17 @@ psa_status_t cc3xx_cipher_update(
     size_t last_output_num_bytes = 0, current_output_size = 0;
 
     CC3XX_ASSERT(operation != NULL);
-    CC3XX_ASSERT(input != NULL);
     CC3XX_ASSERT(!output_size == !output);
     CC3XX_ASSERT(output_length != NULL);
 
     /* Initialize */
     *output_length = 0;
+
+    /* An empty update must not consume or release any buffered blocks. */
+    if (input_length == 0) {
+        return PSA_SUCCESS;
+    }
+    CC3XX_ASSERT(input != NULL);
 
     /* This either restores the state or completes the init */
     status = cc3xx_internal_cipher_setup_complete(operation);
@@ -515,8 +519,6 @@ out_chacha20:
                 status = PSA_ERROR_INVALID_ARGUMENT;
                 goto out_aes;
             }
-#endif /* CC3XX_CONFIG_CBC_PKCS7_DECRYPT_ARBITRARY_LENGTHS */
-
             if (operation->pkcs7_last_block_size == AES_BLOCK_SIZE) {
                 err = cc3xx_lowlevel_aes_update(operation->pkcs7_last_block, operation->pkcs7_last_block_size);
                 if (err != CC3XX_ERR_SUCCESS) {
@@ -526,7 +528,6 @@ out_chacha20:
                 operation->pkcs7_last_block_size = 0;
             }
 
-#if !defined(CC3XX_CONFIG_CBC_PKCS7_DECRYPT_ARBITRARY_LENGTHS)
             if (input_length) {
                 /* Update the cache */
                 memcpy(&operation->pkcs7_last_block, &input[input_length - AES_BLOCK_SIZE], AES_BLOCK_SIZE);
@@ -560,20 +561,37 @@ out_chacha20:
                 input += consumed_input;
                 input_length -= consumed_input;
 
-                if (written_blocks == MAX_BLOCKS_STREAMABLE) {
-                    err = cc3xx_lowlevel_aes_update((const uint8_t *)temp, AES_BLOCK_SIZE);
+                if (written_blocks == 0) {
+                    /* A partial update must not discard the held final block. */
+                    continue;
+                }
+
+                /* A new complete block makes the previously held block safe
+                 * to decrypt. This applies to every batch, not just once per
+                 * update call.
+                 */
+                if (operation->pkcs7_last_block_size == AES_BLOCK_SIZE) {
+                    err = cc3xx_lowlevel_aes_update(operation->pkcs7_last_block,
+                                                  AES_BLOCK_SIZE);
                     if (err != CC3XX_ERR_SUCCESS) {
                         status = cc3xx_to_psa_err(err);
                         goto out_aes;
                     }
-                    memcpy(&operation->pkcs7_last_block, &temp[AES_BLOCK_SIZE / sizeof(uint32_t)], AES_BLOCK_SIZE);
-                    operation->pkcs7_last_block_size = AES_BLOCK_SIZE;
-                } else if (written_blocks == (MAX_BLOCKS_STREAMABLE - 1)) {
-                    memcpy(&operation->pkcs7_last_block, &temp[0], AES_BLOCK_SIZE);
-                    operation->pkcs7_last_block_size = AES_BLOCK_SIZE;
-                } else {
-                    operation->pkcs7_last_block_size = 0;
                 }
+
+                if (written_blocks > 1) {
+                    err = cc3xx_lowlevel_aes_update((const uint8_t *)temp,
+                                                  (written_blocks - 1) * AES_BLOCK_SIZE);
+                    if (err != CC3XX_ERR_SUCCESS) {
+                        status = cc3xx_to_psa_err(err);
+                        goto out_aes;
+                    }
+                }
+
+                memcpy(operation->pkcs7_last_block,
+                       (const uint8_t *)temp + (written_blocks - 1) * AES_BLOCK_SIZE,
+                       AES_BLOCK_SIZE);
+                operation->pkcs7_last_block_size = AES_BLOCK_SIZE;
             }
 #endif /* CC3XX_CONFIG_CBC_PKCS7_DECRYPT_ARBITRARY_LENGTHS */
         } else
@@ -701,6 +719,16 @@ out_chacha20:
          */
         if (operation->alg == PSA_ALG_CBC_PKCS7 &&
             operation->aes.direction == CC3XX_AES_DIRECTION_DECRYPT) {
+
+#if defined(CC3XX_CONFIG_CBC_PKCS7_DECRYPT_ARBITRARY_LENGTHS)
+            /* Updates retain only a partial block in the ring buffer. It
+             * must be empty when finishing a block-aligned ciphertext.
+             */
+            if (operation->pkcs7_ring_buf.count != 0) {
+                status = PSA_ERROR_INVALID_ARGUMENT;
+                goto out_aes;
+            }
+#endif /* CC3XX_CONFIG_CBC_PKCS7_DECRYPT_ARBITRARY_LENGTHS */
 
             if (operation->pkcs7_last_block_size != AES_BLOCK_SIZE) {
                 status = PSA_ERROR_BAD_STATE;
