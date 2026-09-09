@@ -380,6 +380,7 @@ cc3xx_err_t cc3xx_lowlevel_rng_get_random(uint8_t *buf, size_t length,
 cc3xx_err_t cc3xx_lowlevel_rng_get_random_uint(uint32_t bound, uint32_t *uint,
                                                enum cc3xx_rng_quality_t quality)
 {
+    uint64_t value_storage = 0;
     uint32_t value;
     uint32_t attempts = 0;
     cc3xx_err_t err;
@@ -403,11 +404,13 @@ cc3xx_err_t cc3xx_lowlevel_rng_get_random_uint(uint32_t bound, uint32_t *uint,
     }
 
     do {
-        err = cc3xx_lowlevel_rng_get_random((uint8_t *)&value, sizeof(value), quality);
+        err = cc3xx_lowlevel_rng_get_random((uint8_t *)&value_storage,
+                                            sizeof(value), quality);
         if (err != CC3XX_ERR_SUCCESS) {
             return err;
         }
 
+        memcpy(&value, &value_storage, sizeof(value));
         value &= mask;
 
         attempts += 1;

@@ -192,7 +192,9 @@ void setup_dfa_countermeasures(void)
 static cc3xx_err_t setup_dpa_countermeasures(void)
 {
     cc3xx_err_t err;
-    uint8_t aes_rbg_seed;
+    /* DMA platform hooks may access the complete aligned 64-bit word. */
+    uint64_t aes_rbg_seed_storage = 0;
+    uint8_t *aes_rbg_seed = (uint8_t *)&aes_rbg_seed_storage;
 
     /* Some countermeasures are supported only for certain revisions */
     switch (P_CC3XX->id.peripheral_id_0) {
@@ -200,12 +202,11 @@ static cc3xx_err_t setup_dpa_countermeasures(void)
         P_CC3XX->aes.aes_dummy_rounds_enable = 0x1;
         while (!P_CC3XX->aes.aes_rbg_seeding_rdy) {
         }
-        err = cc3xx_lowlevel_rng_get_random((uint8_t *)&aes_rbg_seed, 1,
-                                            CC3XX_RNG_DRBG);
+        err = cc3xx_lowlevel_rng_get_random(aes_rbg_seed, 1, CC3XX_RNG_DRBG);
         if (err != CC3XX_ERR_SUCCESS) {
             return err;
         }
-        P_CC3XX->aes.aes_rbg_seed = aes_rbg_seed;
+        P_CC3XX->aes.aes_rbg_seed = *aes_rbg_seed;
         break;
     }
 
