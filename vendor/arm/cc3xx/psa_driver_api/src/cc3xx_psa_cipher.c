@@ -642,9 +642,11 @@ psa_status_t cc3xx_cipher_finish(
     /* Initialize */
     *output_length = 0;
 
-    if (output_size == 0 || output == NULL) {
-        return PSA_SUCCESS;
-    }
+    CC3XX_ASSERT(output != NULL || output_size == 0);
+
+    /* An empty output buffer does not waive final input validation. Allow it
+     * only when finalization has no pending output to write.
+     */
 
     if (operation->cipher_is_initialized == false) {
         /* This means it was never updated with any data, so just exit now */
@@ -658,6 +660,10 @@ psa_status_t cc3xx_cipher_finish(
 #if defined(CC3XX_CONFIG_ENABLE_STREAM_CIPHER)
         return PSA_SUCCESS; /* In stream cipher mode, it's all handled in cc3xx_cipher_update() */
 #else
+        if (output_size < operation->chacha.dma_state.block_buf_size_in_use) {
+            return PSA_ERROR_BUFFER_TOO_SMALL;
+        }
+
         cc3xx_lowlevel_chacha20_set_state(&(operation->chacha));
 
         cc3xx_lowlevel_chacha20_set_output_buffer(output, output_size);
@@ -702,6 +708,11 @@ out_chacha20:
         /* When encrypting on finish, we need to encrypt the padding */
         if (operation->alg == PSA_ALG_CBC_PKCS7 &&
             operation->aes.direction == CC3XX_AES_DIRECTION_ENCRYPT) {
+            if (output_size < AES_BLOCK_SIZE) {
+                status = PSA_ERROR_BUFFER_TOO_SMALL;
+                goto out_aes;
+            }
+
             uint8_t padded_bytes[AES_BLOCK_SIZE];
             size_t pad_value = AES_BLOCK_SIZE - (operation->aes.crypted_length % AES_BLOCK_SIZE);
             memset(padded_bytes, pad_value, pad_value);
@@ -732,6 +743,11 @@ out_chacha20:
 
             if (operation->pkcs7_last_block_size != AES_BLOCK_SIZE) {
                 status = PSA_ERROR_BAD_STATE;
+                goto out_aes;
+            }
+
+            if (output_size < AES_BLOCK_SIZE) {
+                status = PSA_ERROR_BUFFER_TOO_SMALL;
                 goto out_aes;
             }
 
