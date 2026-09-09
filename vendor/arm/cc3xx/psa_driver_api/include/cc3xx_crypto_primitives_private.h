@@ -18,6 +18,11 @@
 #ifndef __CC3XX_CRYPTO_PRIMITIVES_PRIVATE_H__
 #define __CC3XX_CRYPTO_PRIMITIVES_PRIVATE_H__
 
+/* Configuration overrides can change the layout of the operation contexts. */
+#ifdef CC3XX_CONFIG_FILE
+#include CC3XX_CONFIG_FILE
+#endif
+
 #include "cc3xx_psa_api_config.h"
 #include "psa/crypto.h"
 
