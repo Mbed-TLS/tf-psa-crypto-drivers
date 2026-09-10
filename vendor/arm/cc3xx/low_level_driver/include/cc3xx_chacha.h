@@ -9,7 +9,11 @@
 #define CC3XX_CHACHA_H
 
 #include "cc3xx_error.h"
+#ifndef CC3XX_CONFIG_FILE
 #include "cc3xx_config.h"
+#else
+#include CC3XX_CONFIG_FILE
+#endif /* CC3XX_CONFIG_FILE */
 #include "cc3xx_dma.h"
 #if defined(CC3XX_CONFIG_CHACHA_POLY1305_ENABLE)
 #include "cc3xx_poly1305.h"
