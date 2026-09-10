@@ -648,11 +648,6 @@ psa_status_t cc3xx_cipher_finish(
      * only when finalization has no pending output to write.
      */
 
-    if (operation->cipher_is_initialized == false) {
-        /* This means it was never updated with any data, so just exit now */
-        return PSA_SUCCESS;
-    }
-
     switch (operation->key_type) {
 #if defined(PSA_WANT_KEY_TYPE_CHACHA20)
     case PSA_KEY_TYPE_CHACHA20:
@@ -664,7 +659,10 @@ psa_status_t cc3xx_cipher_finish(
             return PSA_ERROR_BUFFER_TOO_SMALL;
         }
 
-        cc3xx_lowlevel_chacha20_set_state(&(operation->chacha));
+        status = cc3xx_internal_cipher_setup_complete(operation);
+        if (status != PSA_SUCCESS) {
+            return status;
+        }
 
         cc3xx_lowlevel_chacha20_set_output_buffer(output, output_size);
 
@@ -695,7 +693,13 @@ out_chacha20:
         }
 #endif /*PSA_WANT_ALG_CBC_NO_PADDING */
 
-        cc3xx_lowlevel_aes_set_state(&(operation->aes));
+        /* Setup is deferred until needed. With no nonempty update, finish
+         * must still initialize the cipher to process CBC-PKCS7 padding.
+         */
+        status = cc3xx_internal_cipher_setup_complete(operation);
+        if (status != PSA_SUCCESS) {
+            return status;
+        }
 
         cc3xx_lowlevel_aes_set_output_buffer(output, output_size);
 
