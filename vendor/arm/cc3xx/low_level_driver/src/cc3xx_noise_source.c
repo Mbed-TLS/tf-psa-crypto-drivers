@@ -370,7 +370,8 @@ cc3xx_err_t cc3xx_lowlevel_noise_source_finish(void)
     return CC3XX_ERR_SUCCESS;
 }
 
-cc3xx_err_t cc3xx_lowlevel_noise_source_get_sample(
+cc3xx_err_t CC3XX_ATTRIBUTE_ALWAYS_EXPOSED
+cc3xx_lowlevel_noise_source_get_sample(
     struct cc3xx_noise_source_ctx_t *ctx,
     uint32_t *buf,
     size_t word_count)
