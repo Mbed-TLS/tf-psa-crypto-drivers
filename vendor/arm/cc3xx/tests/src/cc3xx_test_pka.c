@@ -1043,14 +1043,12 @@ void pka_test_cycle_counts(struct test_result_t *ret)
         cc3xx_lowlevel_pka_are_equal_si,
         cc3xx_lowlevel_pka_less_than_si,
         cc3xx_lowlevel_pka_greater_than_si,
-        (f_ptr_imm_t)cc3xx_lowlevel_pka_test_bits_ui,
     };
 
     char *binary_imm_function_names[] = {
         "cc3xx_lowlevel_pka_are_equal_si",
         "cc3xx_lowlevel_pka_less_than_si",
         "cc3xx_lowlevel_pka_greater_than_si",
-        "cc3xx_lowlevel_pka_test_bits_ui",
     };
 
     /* trinary functions */
