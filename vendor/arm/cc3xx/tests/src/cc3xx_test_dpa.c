@@ -34,7 +34,8 @@ void dpa_copy_test(struct test_result_t *ret)
     TEST_ASSERT(err == CC3XX_ERR_SUCCESS, "Random generation failed");
 
     /* Verify src is not all zero */
-    TEST_ASSERT(!!memcmp(src, 0, MAX_WORD_COUNT_COPY * 4), "Source rng is null");
+    memset(dst, 0, MAX_WORD_COUNT_COPY * 4);
+    TEST_ASSERT(!!memcmp(src, dst, MAX_WORD_COUNT_COPY * 4), "Source rng is null");
 
     for(idx = 0; idx < ARRAY_SIZE(test_sizes); idx++) {
         size_t word_count = test_sizes[idx];
