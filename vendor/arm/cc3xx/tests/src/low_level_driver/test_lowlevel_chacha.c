@@ -137,12 +137,10 @@ int chacha_test_lowlevel_verify_negative(struct chacha_test_data_t *data)
 {
     uint32_t plaintext[CC3XX_TEST_CHACHA_PLAINTEXT_MAX_LEN / sizeof(uint32_t)] = {0};
     uint32_t auth_data[CC3XX_TEST_CHACHA_PLAINTEXT_MAX_LEN / sizeof(uint32_t)] = {0};
-    uint32_t ciphertext[CC3XX_TEST_CHACHA_PLAINTEXT_MAX_LEN / sizeof(uint32_t)] = {0};
     cc3xx_err_t err;
     int rc;
 
-    memcpy(ciphertext, data->ciphertext, sizeof(data->ciphertext));
-    memcpy(auth_data, data->auth_data, sizeof(data->auth_data));
+    memcpy(auth_data, data->auth_data, data->auth_data_len);
 
     err = cc3xx_lowlevel_chacha20_init(CC3XX_CHACHA_DIRECTION_DECRYPT,
                         CC3XX_CHACHA_MODE_CHACHA_POLY1305,
@@ -159,7 +157,9 @@ int chacha_test_lowlevel_verify_negative(struct chacha_test_data_t *data)
     cc3xx_lowlevel_chacha20_update(data->ciphertext, data->ciphertext_len);
 
     err = cc3xx_lowlevel_chacha20_finish((uint32_t *)data->tag, NULL);
-    cc3xx_test_assert(err == CC3XX_ERR_INVALID_TAG);
+    if (data->auth_data_len > 0) {
+        cc3xx_test_assert(err == CC3XX_ERR_INVALID_TAG);
+    }
 
     cc3xx_test_assert(memcmp(plaintext, data->plaintext,
                              data->plaintext_len) == 0);
