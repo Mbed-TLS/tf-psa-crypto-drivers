@@ -3879,7 +3879,7 @@ static void ecdsa_getpub_tests(struct test_result_t *ret)
             case 3:
                 if (err != CC3XX_ERR_ECDSA_INVALID_KEY) {
                     TEST_LOG("%s case %d expected ECDSA_INVALID_KEY, returned %s\r\n",
-                                curve_name, j, err < _ERROR_MAX ? get_err_name(err) : NULL);
+                                curve_name, j, err < _ERROR_MAX ? get_err_name(err) : "");
                     observed_mismatches++;
                 }
                 break;
@@ -3887,7 +3887,7 @@ static void ecdsa_getpub_tests(struct test_result_t *ret)
             case 2:
                 if (err != CC3XX_ERR_SUCCESS) {
                     TEST_LOG("%s case %d expected SUCCESS, returned %s\r\n",
-                                curve_name, j, err < _ERROR_MAX ? get_err_name(err) : NULL);
+                                curve_name, j, err < _ERROR_MAX ? get_err_name(err) : "");
                     observed_mismatches++;
                 };
                 break;
