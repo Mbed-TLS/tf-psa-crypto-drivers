@@ -124,6 +124,7 @@ cc3xx_err_t cc3xx_lowlevel_hash_init(cc3xx_hash_alg_t alg)
     return CC3XX_ERR_SUCCESS;
 }
 
+#ifndef CC3XX_CONFIG_HW_VERSION_CC310
 void cc3xx_lowlevel_hash_set_xor_input(const uint32_t xor_input)
 {
     /* Flush any pending data before changing the xor_input mask */
@@ -136,6 +137,7 @@ void cc3xx_lowlevel_hash_reset_xor_input(void)
 {
     cc3xx_lowlevel_hash_set_xor_input(0x0UL);
 }
+#endif
 
 void cc3xx_lowlevel_hash_uninit(void)
 {
