@@ -527,8 +527,10 @@ cc3xx_err_t cc3xx_lowlevel_aes_init(
 #endif
 
     /* Check larger keys are supported */
-    assert(P_CC3XX->host_rgf.host_boot & (1 << 28)); /* SUPPORT_256_192_KEY_LOCAL */
-    assert(P_CC3XX->aes.aes_hw_flags & 1); /* SUPPORT_256_192_KEY */
+    if (key_size > CC3XX_AES_KEYSIZE_128) {
+        assert(P_CC3XX->host_rgf.host_boot & (1 << 28)); /* SUPPORT_256_192_KEY_LOCAL */
+        assert(P_CC3XX->aes.aes_hw_flags & 1); /* SUPPORT_256_192_KEY */
+    }
 
 #ifdef CC3XX_CONFIG_DFA_MITIGATIONS_ENABLE
     /* Check if the DFA alarm is tripped, if applicable. This disables the AES
