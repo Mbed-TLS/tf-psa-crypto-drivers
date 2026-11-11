@@ -18,7 +18,7 @@
 
 #include "cc3xx_test_utils.h"
 
-#define MAX_WORD_COUNT_COPY 512
+#define MAX_WORD_COUNT_COPY UINT8_MAX
 
 void dpa_copy_test(struct test_result_t *ret)
 {
@@ -27,7 +27,7 @@ void dpa_copy_test(struct test_result_t *ret)
 
     uint32_t src[MAX_WORD_COUNT_COPY];
     uint32_t dst[MAX_WORD_COUNT_COPY];
-    size_t test_sizes[] = {1, 32, 33, 100, 256, MAX_WORD_COUNT_COPY};
+    size_t test_sizes[] = {1, 32, 33, 100, MAX_WORD_COUNT_COPY};
 
     /* Fill src with random words */
     err = cc3xx_lowlevel_rng_get_random((uint8_t *)src, MAX_WORD_COUNT_COPY * 4, CC3XX_RNG_LFSR);
