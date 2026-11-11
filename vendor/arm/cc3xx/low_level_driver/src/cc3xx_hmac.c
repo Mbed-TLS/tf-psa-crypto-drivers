@@ -14,6 +14,14 @@
 #define IPAD_PATTERN (0x36363636UL)
 #define OPAD_PATTERN (0x5c5c5c5cUL)
 
+/* CC310 seems not to support xoring in HW, so we do this in software instead */
+static inline void apply_xor_to_buffer(uint32_t *buf, size_t buf_len, uint32_t val)
+{
+    for (size_t idx = 0; idx < buf_len; idx++) {
+        buf[idx] ^= val;
+    }
+}
+
 cc3xx_err_t cc3xx_lowlevel_hmac_compute(
     size_t tag_len,
     const uint8_t *key,
@@ -59,7 +67,11 @@ cc3xx_err_t cc3xx_lowlevel_hmac_compute(
         goto out;
     }
 
+#ifdef CC3XX_CONFIG_HW_VERSION_CC310
+    apply_xor_to_buffer(block, CC3XX_HMAC_BLOCK_SIZE / sizeof(uint32_t), IPAD_PATTERN);
+#else
     cc3xx_lowlevel_hash_set_xor_input(IPAD_PATTERN);
+#endif
     err = cc3xx_lowlevel_hash_update((uint8_t *)block, CC3XX_HMAC_BLOCK_SIZE);
     if (err != CC3XX_ERR_SUCCESS) {
         goto out;
@@ -67,7 +79,9 @@ cc3xx_err_t cc3xx_lowlevel_hmac_compute(
 
     /* H(K ^ ipad | data) */
     if (data_length > 0) {
+#ifndef CC3XX_CONFIG_HW_VERSION_CC310
         cc3xx_lowlevel_hash_reset_xor_input();
+#endif
         err = cc3xx_lowlevel_hash_update(data, data_length);
         if (err != CC3XX_ERR_SUCCESS) {
             goto out;
@@ -83,13 +97,21 @@ cc3xx_err_t cc3xx_lowlevel_hmac_compute(
         return err;
     }
 
+#ifdef CC3XX_CONFIG_HW_VERSION_CC310
+    apply_xor_to_buffer(
+        block, CC3XX_HMAC_BLOCK_SIZE / sizeof(uint32_t),
+        IPAD_PATTERN ^ OPAD_PATTERN);
+#else
     cc3xx_lowlevel_hash_set_xor_input(OPAD_PATTERN);
+#endif
     err = cc3xx_lowlevel_hash_update((uint8_t *)block, CC3XX_HMAC_BLOCK_SIZE);
     if (err != CC3XX_ERR_SUCCESS) {
         goto out;
     }
 
+#ifndef CC3XX_CONFIG_HW_VERSION_CC310
     cc3xx_lowlevel_hash_reset_xor_input();
+#endif
     err = cc3xx_lowlevel_hash_update((uint8_t *)h_out, CC3XX_HASH_LENGTH(alg));
     if (err != CC3XX_ERR_SUCCESS) {
         goto out;
@@ -147,9 +169,15 @@ cc3xx_err_t cc3xx_lowlevel_hmac_set_key(
         goto out;
     }
 
+#ifdef CC3XX_CONFIG_HW_VERSION_CC310
+    apply_xor_to_buffer(state->key, CC3XX_HMAC_BLOCK_SIZE / sizeof(uint32_t), IPAD_PATTERN);
+#else
     cc3xx_lowlevel_hash_set_xor_input(IPAD_PATTERN);
+#endif
     err = cc3xx_lowlevel_hash_update((uint8_t *)state->key, sizeof(state->key));
+#ifndef CC3XX_CONFIG_HW_VERSION_CC310
     cc3xx_lowlevel_hash_reset_xor_input();
+#endif
 
 out:
     if (err == CC3XX_ERR_SUCCESS) {
@@ -209,13 +237,21 @@ cc3xx_err_t cc3xx_lowlevel_hmac_finish(
         goto out;
     }
 
+#ifdef CC3XX_CONFIG_HW_VERSION_CC310
+    apply_xor_to_buffer(
+        state->key, CC3XX_HMAC_BLOCK_SIZE / sizeof(uint32_t),
+        IPAD_PATTERN ^ OPAD_PATTERN);
+#else
     cc3xx_lowlevel_hash_set_xor_input(OPAD_PATTERN);
+#endif
     err = cc3xx_lowlevel_hash_update((uint8_t *)state->key, sizeof(state->key));
     if (err != CC3XX_ERR_SUCCESS) {
         goto out;
     }
 
+#ifndef CC3XX_CONFIG_HW_VERSION_CC310
     cc3xx_lowlevel_hash_reset_xor_input();
+#endif
     err = cc3xx_lowlevel_hash_update((const uint8_t *)h_out, sizeof(h_out));
     if (err != CC3XX_ERR_SUCCESS) {
         goto out;
