@@ -15,6 +15,10 @@
 int hash_test_lowlevel_mixed_xoring(struct hash_test_data_t *data,
                                     cc3xx_hash_alg_t alg)
 {
+#ifdef CC3XX_CONFIG_HW_VERSION_CC310
+    /* CC310 seems not to support xoring */
+    return 0;
+#else
     uint32_t output[SHA256_OUTPUT_SIZE / sizeof(uint32_t)];
     cc3xx_err_t err;
     int rc;
@@ -40,6 +44,7 @@ cleanup:
     cc3xx_lowlevel_hash_uninit();
 
     return rc;
+#endif
 }
 
 int hash_test_lowlevel_oneshot(struct hash_test_data_t *data,
@@ -70,6 +75,10 @@ cleanup:
 int hash_test_lowlevel_xored_oneshot(struct hash_test_data_t *data,
                                      cc3xx_hash_alg_t alg)
 {
+#ifdef CC3XX_CONFIG_HW_VERSION_CC310
+    /* CC310 seems not to support xoring */
+    return 0;
+#else
     uint32_t output[SHA256_OUTPUT_SIZE / sizeof(uint32_t)];
     cc3xx_err_t err;
     int rc;
@@ -92,6 +101,7 @@ cleanup:
     cc3xx_lowlevel_hash_uninit();
 
     return rc;
+#endif
 }
 
 int hash_test_lowlevel_multipart(struct hash_test_data_t *data,
