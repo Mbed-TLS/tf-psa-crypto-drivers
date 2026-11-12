@@ -496,12 +496,11 @@ static cc3xx_err_t ecdsa_sign(bool is_deterministic, cc3xx_ec_curve_id_t curve_i
         goto out;
     }
 
-    /* We don't allow curves with orders smaller than the hash size. This is not
-     * an issue for the current set of curves, because for example P-521 could be
-     * used only with SHA-512. Using mismatched Hash outputs and orders makes the
-     * overall security strength equal to the minimum of the two
-     */
-    assert(hash_len <= curve.modulus_size);
+    if (hash_len > cc3xx_lowlevel_pka_get_register_size()) {
+        NONFATAL_ERR(CC3XX_ERR_ECDSA_INVALID_HASH);
+        err = CC3XX_ERR_ECDSA_INVALID_HASH;
+        goto out;
+    }
 
     /* This only checks that the private key fits in the allocated register size on PKA engine.
      * The validation of the private key happens in load_validate_private_key using the PKA
