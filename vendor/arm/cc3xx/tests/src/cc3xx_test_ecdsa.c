@@ -3646,8 +3646,6 @@ int cc3xx_test_sign_deterministic(void)
 {
     int rc;
     cc3xx_err_t err;
-    /* Directly taken from RFC 6979 for SHA-256 on P-256*/
-    const size_t qlen = 256;
 
     __attribute__((aligned(4)))
     const uint8_t hash_buf[] = {
@@ -3656,6 +3654,10 @@ int cc3xx_test_sign_deterministic(void)
         0x1a, 0x83, 0x1d, 0x02, 0x68, 0xe9, 0x89, 0x15,
         0x62, 0x11, 0x3d, 0x8a, 0x62, 0xad, 0xd1, 0xbf,
     };
+
+#ifdef CC3XX_CONFIG_EC_CURVE_SECP_256_R1_ENABLE
+    /* Directly taken from RFC 6979 for SHA-256 on P-256*/
+    const size_t qlen = 256;
 
     __attribute__((aligned(4)))
     const uint8_t priv_buf[] = {
@@ -3683,10 +3685,9 @@ int cc3xx_test_sign_deterministic(void)
 
     uint32_t sig_r[BITS_TO_BYTES(qlen) / sizeof(uint32_t)];
     uint32_t sig_s[BITS_TO_BYTES(qlen) / sizeof(uint32_t)];
+#endif
 
-    size_t sig_r_size, sig_s_size;
-    size_t mismatch_observed = 0;
-
+#ifdef CC3XX_CONFIG_EC_CURVE_SECP_384_R1_ENABLE
     /* Directly taken from RFC 6979 for SHA-256 on P-384 */
     const size_t qlen_p384 = 384;
 
@@ -3722,7 +3723,12 @@ int cc3xx_test_sign_deterministic(void)
         0xEF, 0xDC, 0x63, 0xEC, 0xCD, 0x1A, 0xC4, 0x2E,
         0xC0, 0xCB, 0x86, 0x68, 0xA4, 0xFA, 0x0A, 0xB0
     };
+#endif
 
+    size_t sig_r_size, sig_s_size;
+    size_t mismatch_observed = 0;
+
+#ifdef CC3XX_CONFIG_EC_CURVE_SECP_256_R1_ENABLE
     err = cc3xx_lowlevel_ecdsa_sign_deterministic(CC3XX_EC_CURVE_SECP_256_R1,
                                               (const uint32_t *)priv_buf, sizeof(priv_buf),
                                               (const uint32_t *)hash_buf, sizeof(hash_buf),
@@ -3746,7 +3752,9 @@ int cc3xx_test_sign_deterministic(void)
 
     cc3xx_test_assert(mismatch_observed == 0);
     TEST_LOG("DETERMINISTIC_ECDSA(P-256, SHA-256) passed\r\n");
+#endif
 
+#ifdef CC3XX_CONFIG_EC_CURVE_SECP_384_R1_ENABLE
     err = cc3xx_lowlevel_ecdsa_sign_deterministic(CC3XX_EC_CURVE_SECP_384_R1,
                                               (const uint32_t *)priv_buf_p384, sizeof(priv_buf_p384),
                                               (const uint32_t *)hash_buf, sizeof(hash_buf),
@@ -3770,6 +3778,7 @@ int cc3xx_test_sign_deterministic(void)
 
     cc3xx_test_assert(mismatch_observed == 0);
     TEST_LOG("DETERMINISTIC_ECDSA(P-384, SHA-256) passed\r\n");
+#endif
 
     rc = 0;
 
@@ -3937,7 +3946,9 @@ static void ecdsa_sign_verify_tests(struct test_result_t *ret)
     }
 }
 
-#if defined(CC3XX_CONFIG_ECDSA_SIGN_DETERMINISTIC_ENABLE)
+#if defined(CC3XX_CONFIG_ECDSA_SIGN_DETERMINISTIC_ENABLE)  \
+ && (defined(CC3XX_CONFIG_EC_CURVE_SECP_256_R1_ENABLE)     \
+     || defined(CC3XX_CONFIG_EC_CURVE_SECP_384_R1_ENABLE))
 static void ecdsa_sign_deterministic_tests(struct test_result_t *ret)
 {
     TEST_ASSERT(cc3xx_test_sign_deterministic() == 0, "Sign deterministically failed");
@@ -3966,7 +3977,9 @@ static struct test_t ecdsa_tests[] = {
         "CC3XX_ECDSA_SIGN_VERIFY_TEST",
         "CC3XX ECDSA sign verify tests",
     },
-#if defined(CC3XX_CONFIG_ECDSA_SIGN_DETERMINISTIC_ENABLE)
+#if defined(CC3XX_CONFIG_ECDSA_SIGN_DETERMINISTIC_ENABLE)  \
+ && (defined(CC3XX_CONFIG_EC_CURVE_SECP_256_R1_ENABLE)     \
+     || defined(CC3XX_CONFIG_EC_CURVE_SECP_384_R1_ENABLE))
     {
         &ecdsa_sign_deterministic_tests,
         "CC3XX_ECDSA_SIGN_DETERMINISTIC_TEST",
