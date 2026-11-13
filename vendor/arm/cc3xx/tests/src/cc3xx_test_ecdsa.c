@@ -3786,6 +3786,54 @@ cleanup:
     return rc;
 }
 
+static void cc3xx_test_sign_oversized_hash(struct test_result_t *ret)
+{
+    const cc3xx_ec_curve_id_t curve_id[] = {
+#ifdef CC3XX_CONFIG_EC_CURVE_SECP_192_R1_ENABLE
+        CC3XX_EC_CURVE_SECP_192_R1,
+#endif /* CC3XX_CONFIG_EC_CURVE_SECP_192_R1_ENABLE */
+
+#ifdef CC3XX_CONFIG_EC_CURVE_SECP_224_R1_ENABLE
+        CC3XX_EC_CURVE_SECP_224_R1,
+#endif /* CC3XX_CONFIG_EC_CURVE_SECP_224_R1_ENABLE */
+
+#ifdef CC3XX_CONFIG_EC_CURVE_SECP_256_R1_ENABLE
+        CC3XX_EC_CURVE_SECP_256_R1,
+#endif /* CC3XX_CONFIG_EC_CURVE_SECP_256_R1_ENABLE */
+
+#ifdef CC3XX_CONFIG_EC_CURVE_SECP_384_R1_ENABLE
+        CC3XX_EC_CURVE_SECP_384_R1,
+#endif /* CC3XX_CONFIG_EC_CURVE_SECP_384_R1_ENABLE */
+
+#ifdef CC3XX_CONFIG_EC_CURVE_SECP_521_R1_ENABLE
+        CC3XX_EC_CURVE_SECP_521_R1
+#endif /* CC3XX_CONFIG_EC_CURVE_SECP_521_R1_ENABLE */
+    };
+
+    cc3xx_err_t err;
+    uint32_t hash[32]; /* hash too long to fit in PKA register, even for SECP-512 */
+    uint32_t private_key[68];
+    size_t private_key_size;
+    uint32_t sig_r[68];
+    size_t sig_r_size;
+    uint32_t sig_s[68];
+    size_t sig_s_size;
+
+    for (size_t i = 0; i < ARRAY_SIZE(curve_id); i++) {
+        err = cc3xx_lowlevel_ecdsa_genkey(curve_id[i], private_key, sizeof(private_key),
+                                    &private_key_size);
+        if (err == CC3XX_ERR_EC_CURVE_NOT_SUPPORTED) {
+            return;
+        }
+        TEST_ASSERT(err == CC3XX_ERR_SUCCESS, "genkey should succeed");
+
+        err = cc3xx_lowlevel_ecdsa_sign(curve_id[i], private_key, private_key_size, hash, sizeof(hash),
+                                sig_r, sizeof(sig_r), &sig_r_size,
+                                sig_s, sizeof(sig_s), &sig_s_size);
+        TEST_ASSERT(err == CC3XX_ERR_ECDSA_INVALID_HASH, "oversized hash should fail");
+    }
+}
+
 static void swap_endianess(uint8_t *p, size_t len)
 {
    int val;
@@ -3976,6 +4024,11 @@ static struct test_t ecdsa_tests[] = {
         &ecdsa_sign_verify_tests,
         "CC3XX_ECDSA_SIGN_VERIFY_TEST",
         "CC3XX ECDSA sign verify tests",
+    },
+    {
+        &cc3xx_test_sign_oversized_hash,
+        "CC3XX_ECDSA_SIGN_OVERSIZED_HASH_TEST",
+        "CC3XX ECDSA sign oversized hash tests",
     },
 #if defined(CC3XX_CONFIG_ECDSA_SIGN_DETERMINISTIC_ENABLE)  \
  && (defined(CC3XX_CONFIG_EC_CURVE_SECP_256_R1_ENABLE)     \
