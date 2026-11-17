@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2025-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -155,6 +155,8 @@ void drbg_hmac_test(struct test_result_t *ret)
 #if defined(CC3XX_CONFIG_DRBG_CTR_ENABLE) || \
     defined(CC3XX_CONFIG_RNG_DRBG_CTR)
 #define DRBG_CTR_RANDOM_BITS    512
+#define DRBG_CTR_SHORT_BYTES    15
+#define DRBG_CTR_FOLLOWUP_BYTES 16
 void drbg_ctr_test(struct test_result_t *ret)
 {
     cc3xx_err_t err;
@@ -179,6 +181,9 @@ void drbg_ctr_test(struct test_result_t *ret)
         0xd0, 0xdd, 0xef, 0xcb, 0x74, 0x74, 0xd8, 0x99,
         0xbd, 0x99, 0xf3, 0x65, 0x54, 0x27, 0x51, 0x9f,
         0xc5, 0xb4, 0x05, 0x7b, 0xca, 0xf3, 0x06, 0xd4};
+    const uint8_t expected_followup[DRBG_CTR_FOLLOWUP_BYTES] = {
+        0x50, 0x94, 0x88, 0xb1, 0x85, 0x4a, 0xda, 0xd1,
+        0xd7, 0x0e, 0xbd, 0x62, 0x9c, 0x05, 0x2a, 0xab};
 #elif (CC3XX_CONFIG_DRBG_CTR_AES_KEYSIZE == 256)
     /* DRBGVS PR=false AES-256 use df test case (COUNT=0). */
     const uint8_t entropy[] = {
@@ -203,6 +208,9 @@ void drbg_ctr_test(struct test_result_t *ret)
         0xa7, 0x63, 0x25, 0x86, 0x6f, 0xa9, 0x7e, 0x16,
         0xd7, 0x40, 0x06, 0xbc, 0x96, 0xf2, 0x62, 0x49,
         0xb9, 0xf0, 0xa9, 0x0d, 0x07, 0x6f, 0x08, 0xe5};
+    const uint8_t expected_followup[DRBG_CTR_FOLLOWUP_BYTES] = {
+        0xfa, 0x72, 0x37, 0x60, 0x8f, 0x6f, 0xa3, 0x1f,
+        0xe1, 0xec, 0xb3, 0x07, 0x50, 0x47, 0x61, 0x3e};
 #else
 #error "cc3xx_config: CTR_DRBG AES key size must be 128 or 256"
 #endif /* CC3XX_CONFIG_DRBG_CTR_AES_KEYSIZE */
@@ -227,11 +235,22 @@ void drbg_ctr_test(struct test_result_t *ret)
     TEST_ASSERT(memcmp(readback, expected, DRBG_CTR_RANDOM_BITS / 8) == 0,
                     "random bits mismatch");
 
+    err = cc3xx_lowlevel_drbg_ctr_generate(&state,
+                                           DRBG_CTR_SHORT_BYTES * 8,
+                                           readback, NULL, 0);
+    TEST_ASSERT(err == CC3XX_ERR_SUCCESS, "drbg ctr generate failed");
+
+    err = cc3xx_lowlevel_drbg_ctr_generate(&state,
+                                           DRBG_CTR_FOLLOWUP_BYTES * 8,
+                                           readback, NULL, 0);
+    TEST_ASSERT(err == CC3XX_ERR_SUCCESS, "drbg ctr generate failed");
+    TEST_ASSERT(memcmp(readback, expected_followup,
+                       sizeof(expected_followup)) == 0,
+                "random bits mismatch");
+
     ret->val = TEST_PASSED;
 
     cc3xx_lowlevel_drbg_ctr_uninit(&state);
-
-    return;
 }
 #endif /* CC3XX_CONFIG_DRBG_CTR_ENABLE || CC3XX_CONFIG_RNG_DRBG_CTR */
 
