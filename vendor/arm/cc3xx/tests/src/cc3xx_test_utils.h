@@ -58,7 +58,7 @@ static inline uint32_t cycles_to_ms(uint32_t cycles)
 {
     uint64_t elapsed_time_ms;
 
-    elapsed_time_ms = ((uint64_t) cycles * 1e3) / SystemCoreClock;
+    elapsed_time_ms = ((uint64_t)cycles * 1000U) / SystemCoreClock;
 
     return elapsed_time_ms;
 }
