@@ -458,6 +458,8 @@ cc3xx_err_t cc3xx_lowlevel_drbg_ctr_generate(
     const uint8_t all_zeros[CC3XX_DRBG_CTR_SEEDLEN] = {0};
     const uint8_t *p_additional_input = all_zeros;
     uint32_t derived_additional_input[CC3XX_DRBG_CTR_SEEDLEN_WORDS];
+    uint32_t partial_block[CC3XX_DRBG_CTR_BLOCKLEN_WORDS];
+    const size_t partial_bytes = (len_bits / 8) % CC3XX_DRBG_CTR_BLOCKLEN;
     size_t produced_bits = 0;
     size_t num_whole_blocks = (len_bits/8)/CC3XX_DRBG_CTR_SEEDLEN;
     struct cc3xx_aes_state_t aes_state;
@@ -531,23 +533,42 @@ cc3xx_err_t cc3xx_lowlevel_drbg_ctr_generate(
         produced_bits += (CC3XX_DRBG_CTR_SEEDLEN * 8);
     }
 
-    /* Deal with a partial block */
-    if ((len_bits - produced_bits) != 0) {
-        /* Produce the last block */
-        err = cc3xx_lowlevel_aes_update(all_zeros, (len_bits - produced_bits)/8); /* in bytes */
+    const size_t remaining_bytes = (len_bits - produced_bits) / 8;
+    if (remaining_bytes > partial_bytes) {
+        err = cc3xx_lowlevel_aes_update(all_zeros, remaining_bytes - partial_bytes);
         if (err != CC3XX_ERR_SUCCESS) {
             goto out;
         }
     }
 
-    /* We need to get the value of the counter back from the AES subsystem
-     * as it's required in update()
+    /*
+     * Process the last AES block before capturing the counter. A partial
+     * block would otherwise remain buffered until aes_finish(), which also
+     * clears the AES state. Discard the unused output bytes as CTR-DRBG
+     * requires, without writing beyond the caller's requested length.
+     */
+    if (partial_bytes != 0) {
+        cc3xx_lowlevel_aes_set_output_buffer((uint8_t *)partial_block,
+                                              sizeof(partial_block));
+        err = cc3xx_lowlevel_aes_update(all_zeros, sizeof(partial_block));
+        if (err != CC3XX_ERR_SUCCESS) {
+            goto out;
+        }
+    }
+
+    /* All AES blocks have now been processed, so the counter is current.
+     * Save it before aes_finish() clears the hardware state.
      */
     cc3xx_lowlevel_aes_get_state(&aes_state);
 
     err = cc3xx_lowlevel_aes_finish(NULL, NULL);
     if (err != CC3XX_ERR_SUCCESS) {
         goto out;
+    }
+
+    if (partial_bytes != 0) {
+        memcpy(returned_bits + len_bits / 8 - partial_bytes,
+               partial_block, partial_bytes);
     }
 
 #ifdef CC3XX_CONFIG_DPA_MITIGATIONS_ENABLE
@@ -568,6 +589,9 @@ cc3xx_err_t cc3xx_lowlevel_drbg_ctr_generate(
     state->reseed_counter++;
 
 out:
+    if (partial_bytes != 0) {
+        cc3xx_secure_erase_buffer(partial_block, CC3XX_DRBG_CTR_BLOCKLEN_WORDS);
+    }
     if (additional_input != NULL) {
         cc3xx_secure_erase_buffer(derived_additional_input,
                                   CC3XX_DRBG_CTR_SEEDLEN_WORDS);
