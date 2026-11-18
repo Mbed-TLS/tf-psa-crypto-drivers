@@ -535,7 +535,11 @@ cc3xx_err_t cc3xx_lowlevel_drbg_ctr_generate(
 
     const size_t remaining_bytes = (len_bits - produced_bits) / 8;
     if (remaining_bytes > partial_bytes) {
-        err = cc3xx_lowlevel_aes_update(all_zeros, remaining_bytes - partial_bytes);
+        /* remaining_bytes = full_block_bytes + partial_bytes.
+         * Feed only complete AES blocks here; handle the partial block below.
+         */
+        const size_t full_block_bytes = remaining_bytes - partial_bytes;
+        err = cc3xx_lowlevel_aes_update(all_zeros, full_block_bytes);
         if (err != CC3XX_ERR_SUCCESS) {
             goto out;
         }
@@ -567,7 +571,7 @@ cc3xx_err_t cc3xx_lowlevel_drbg_ctr_generate(
     }
 
     if (partial_bytes != 0) {
-        memcpy(returned_bits + len_bits / 8 - partial_bytes,
+        memcpy(returned_bits + ((len_bits / 8) - partial_bytes),
                partial_block, partial_bytes);
     }
 
