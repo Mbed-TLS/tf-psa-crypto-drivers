@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Arm Limited. All rights reserved.
+ * Copyright (c) 2025-2026, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -42,13 +42,15 @@ extern "C" {
 size_t cc3xx_get_opaque_key_buffer_size(psa_key_id_t key);
 
 /**
- * @brief               translate the key id of an opaque key to its corresponding
- *                      HW key ID.
+ * @brief Translate a PSA opaque key ID to its corresponding hardware key slot.
  *
- * @param[in] psa_key_id_t            The PSA opaque key ID.
- * @return uint32_t                   The HW key slot ID.
+ * @param[in]  key_id     PSA opaque key ID.
+ * @param[out] hw_key_id  Corresponding hardware key slot, unchanged on failure.
+ *
+ * @retval PSA_SUCCESS                 Key ID successfully translated.
+ * @retval PSA_ERROR_INVALID_ARGUMENT  Invalid opaque key ID or NULL pointer.
  */
-uint32_t cc3xx_get_builtin_key(psa_key_id_t key_id);
+psa_status_t cc3xx_get_builtin_key(psa_key_id_t key_id, uint32_t *hw_key_id);
 
 /**
  * @brief Translate a hardware key slot ID to its corresponding PSA opaque key ID.
