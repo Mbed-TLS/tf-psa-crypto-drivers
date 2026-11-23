@@ -1083,27 +1083,50 @@ cc3xx_err_t cc3xx_lowlevel_aes_update(const uint8_t* in, size_t in_len)
     || defined (CC3XX_CONFIG_AES_CMAC_ENABLE)
 static cc3xx_err_t tag_cmp_or_copy(uint32_t *tag, uint32_t *calculated_tag)
 {
-    uint32_t idx;
-    uint32_t tag_word_size = (aes_state.aes_tag_len + sizeof(uint32_t) - 1) / sizeof(uint32_t);
-    uint8_t permutation_buf[tag_word_size];
-    bool are_different = 0;
+    const size_t word_count = aes_state.aes_tag_len / sizeof(*tag);
+    const size_t tail_size = aes_state.aes_tag_len % sizeof(*tag);
+    uint32_t diff = 0;
 
-    if (aes_state.direction == CC3XX_AES_DIRECTION_DECRYPT) {
-        cc3xx_lowlevel_rng_get_random_permutation(permutation_buf, tag_word_size);
-
-        for (idx = 0; idx < tag_word_size; idx++) {
-            are_different |= tag[permutation_buf[idx]] ^ calculated_tag[permutation_buf[idx]];
-        }
-    } else {
-        cc3xx_dpa_hardened_word_copy(tag, calculated_tag, tag_word_size);
-    }
-
-    if (are_different) {
-        NONFATAL_ERR(CC3XX_ERR_INVALID_TAG);
-        return CC3XX_ERR_INVALID_TAG;
-    } else {
+    if (aes_state.aes_tag_len == 0) {
         return CC3XX_ERR_SUCCESS;
     }
+
+    if (aes_state.direction == CC3XX_AES_DIRECTION_DECRYPT) {
+        /* Include the partial word in the randomized comparison order. */
+        const size_t chunk_count = word_count + (tail_size != 0);
+        uint8_t permutation_buf[chunk_count];
+
+        cc3xx_lowlevel_rng_get_random_permutation(permutation_buf, chunk_count);
+
+        for (size_t idx = 0; idx < chunk_count; idx++) {
+            const size_t word = permutation_buf[idx];
+
+            if (word < word_count) {
+                diff |= tag[word] ^ calculated_tag[word];
+            } else {
+                const uint8_t *tag_tail = (const uint8_t *)(tag + word);
+                const uint8_t *calculated_tail = (const uint8_t *)(calculated_tag + word);
+
+                for (size_t byte = 0; byte < tail_size; byte++) {
+                    diff |= tag_tail[byte] ^ calculated_tail[byte];
+                }
+            }
+        }
+    } else {
+        cc3xx_dpa_hardened_word_copy(tag, calculated_tag, word_count);
+        if (tail_size != 0) {
+            cc3xx_dpa_hardened_byte_copy((uint8_t *)(tag + word_count),
+                                        (const uint8_t *)(calculated_tag + word_count),
+                                        tail_size);
+        }
+    }
+
+    if (diff != 0) {
+        NONFATAL_ERR(CC3XX_ERR_INVALID_TAG);
+        return CC3XX_ERR_INVALID_TAG;
+    }
+
+    return CC3XX_ERR_SUCCESS;
 }
 #endif
 
