@@ -12,6 +12,66 @@
 
 #include <string.h>
 
+#ifdef CC3XX_CONFIG_AES_CCM_ENABLE
+int aes_test_lowlevel_ccm_large_aad(uint32_t aad_len,
+                                    const uint8_t expected_tag[16])
+{
+    const uint32_t key[4] = {0};
+    const uint32_t nonce[3] = {0};
+    const size_t chunk_sizes[] = {256, 17};
+    const cc3xx_aes_direction_t directions[] = {
+        CC3XX_AES_DIRECTION_ENCRYPT, CC3XX_AES_DIRECTION_DECRYPT
+    };
+    uint32_t aad[256 / sizeof(uint32_t)];
+    uint32_t tag[4];
+    cc3xx_err_t err;
+    int rc = 0;
+
+    /* Reuse a small chunk of repeated AAD rather than storing a large vector. */
+    memset(aad, 0xa5, sizeof(aad));
+
+    for (size_t i = 0; i < sizeof(chunk_sizes) / sizeof(chunk_sizes[0]); i++) {
+        for (size_t j = 0; j < sizeof(directions) / sizeof(directions[0]); j++) {
+            TEST_LOG("CCM AAD length %u, chunk size %u, direction %u\r\n",
+                     (unsigned int)aad_len, (unsigned int)chunk_sizes[i],
+                     (unsigned int)directions[j]);
+
+            err = cc3xx_lowlevel_aes_init(directions[j], CC3XX_AES_MODE_CCM,
+                                         CC3XX_AES_KEY_ID_USER_KEY, key,
+                                         CC3XX_AES_KEYSIZE_128, nonce, sizeof(nonce));
+            cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+
+            cc3xx_lowlevel_aes_set_tag_len(sizeof(tag));
+            cc3xx_lowlevel_aes_set_data_len(0, aad_len);
+
+            for (size_t offset = 0; offset < aad_len;) {
+                size_t chunk_len = aad_len - offset;
+
+                if (chunk_len > chunk_sizes[i]) {
+                    chunk_len = chunk_sizes[i];
+                }
+                cc3xx_lowlevel_aes_update_authed_data((uint8_t *)aad, chunk_len);
+                offset += chunk_len;
+            }
+
+            /* Decryption verifies the reference tag, not the preceding output. */
+            if (directions[j] == CC3XX_AES_DIRECTION_DECRYPT) {
+                memcpy(tag, expected_tag, sizeof(tag));
+            } else {
+                memset(tag, 0, sizeof(tag));
+            }
+            err = cc3xx_lowlevel_aes_finish(tag, NULL);
+            cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+            cc3xx_test_assert(memcmp(tag, expected_tag, sizeof(tag)) == 0);
+        }
+    }
+
+cleanup:
+    cc3xx_lowlevel_aes_uninit();
+    return rc;
+}
+#endif /* CC3XX_CONFIG_AES_CCM_ENABLE */
+
 /* AES-CCM non-tunnelling mode helpers.
  *
  * Tunnelling performs CTR encryption/decryption and CBC-MAC tag calculation
