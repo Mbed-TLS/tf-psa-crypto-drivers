@@ -9,7 +9,11 @@
 #define CC3XX_AES_H
 
 #include "cc3xx_error.h"
+#ifndef CC3XX_CONFIG_FILE
 #include "cc3xx_config.h"
+#else
+#include CC3XX_CONFIG_FILE
+#endif
 #include "cc3xx_dma.h"
 
 #include <stdint.h>
