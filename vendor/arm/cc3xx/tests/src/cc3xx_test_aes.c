@@ -1515,6 +1515,35 @@ CREATE_AES_TESTSUITE(CC3XX_AES_KEYSIZE_256, CC3XX_AES_MODE_CMAC);
 #endif /* CC3XX_CONFIG_AES_CMAC_ENABLE */
 
 #ifdef CC3XX_CONFIG_AES_CCM_ENABLE
+static void aes_ccm_large_aad_tests_run(struct test_result_t *ret)
+{
+    /* AES-128, zero key and 12-byte nonce, empty plaintext, AAD filled with
+     * 0xa5. Reference tags generated with Python cryptography's AESCCM.
+     */
+    static const uint8_t tags[][16] = {
+        {0x14, 0xd4, 0x48, 0xdd, 0xb4, 0xb5, 0x2c, 0xc1,
+         0x53, 0x8c, 0xfa, 0x6e, 0x22, 0x7f, 0xd2, 0xec},
+        {0xa5, 0x12, 0xd7, 0x54, 0x31, 0xda, 0x2d, 0x88,
+         0x62, 0x0b, 0x57, 0xf4, 0xa9, 0xb2, 0xb6, 0x3b},
+        {0x47, 0xcc, 0x03, 0x2f, 0xd8, 0x1b, 0x8d, 0xc5,
+         0xdd, 0xcd, 0x4e, 0x3b, 0x55, 0xb8, 0x73, 0xcc},
+    };
+
+    TEST_ASSERT(aes_test_lowlevel_ccm_large_aad(65279, tags[0]) == 0,
+                "CCM AAD length 65279 should use the short length encoding");
+    TEST_ASSERT(aes_test_lowlevel_ccm_large_aad(65280, tags[1]) == 0,
+                "CCM AAD length 65280 should use the extended length encoding");
+    TEST_ASSERT(aes_test_lowlevel_ccm_large_aad(65281, tags[2]) == 0,
+                "CCM AAD length 65281 should use the extended length encoding");
+    ret->val = TEST_PASSED;
+}
+
+static struct test_t aes_ccm_large_aad_tests = {
+    &aes_ccm_large_aad_tests_run,
+    "CC3XX_AES_CCM_LARGE_AAD_TEST",
+    "CCM associated-data length encoding boundary"
+};
+
 CREATE_AES_TESTSUITE(CC3XX_AES_KEYSIZE_128, CC3XX_AES_MODE_CCM);
 #ifndef CC3XX_CONFIG_HW_VERSION_CC310
 CREATE_AES_TESTSUITE(CC3XX_AES_KEYSIZE_192, CC3XX_AES_MODE_CCM);
@@ -1565,6 +1594,7 @@ void add_cc3xx_aes_tests_to_testsuite(struct test_suite_t *p_ts, uint32_t ts_siz
 #endif /* CC3XX_CONFIG_AES_CMAC_ENABLE */
 
 #ifdef CC3XX_CONFIG_AES_CCM_ENABLE
+    cc3xx_add_tests_to_testsuite(&aes_ccm_large_aad_tests, 1, p_ts, ts_size);
     cc3xx_add_tests_to_testsuite(&aes_CC3XX_AES_KEYSIZE_128CC3XX_AES_MODE_CCM_tests, 1, p_ts, ts_size);
 #ifndef CC3XX_CONFIG_HW_VERSION_CC310
     cc3xx_add_tests_to_testsuite(&aes_CC3XX_AES_KEYSIZE_192CC3XX_AES_MODE_CCM_tests, 1, p_ts, ts_size);
