@@ -918,7 +918,9 @@ psa_status_t cc3xx_aead_verify(
     case PSA_KEY_TYPE_CHACHA20:
     {
 #if defined(CC3XX_CONFIG_ENABLE_STREAM_CIPHER)
-        uint8_t diff, idx;
+        /* Preserve differences in all bits of each 32-bit tag word. */
+        uint32_t diff;
+        uint8_t idx;
         const uint32_t tag_word_size = 4;
         uint8_t permutation_buf[tag_word_size];
 
