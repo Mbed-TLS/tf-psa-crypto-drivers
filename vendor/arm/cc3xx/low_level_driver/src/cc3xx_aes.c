@@ -893,7 +893,7 @@ static size_t ccm_input_auth_length(void)
     } else {
         auth_length_buf[0] = 0xFF;
         auth_length_buf[1] = 0xFE;
-        memcpy(auth_length_buf,
+        memcpy(auth_length_buf + 2,
                ((uint8_t *)&auth_length_be) + sizeof(auth_length_be) - 4, 4);
         auth_length_byte_length = 6;
     }
