@@ -13,6 +13,63 @@
 #include <string.h>
 
 #ifdef CC3XX_CONFIG_AES_CCM_ENABLE
+int aes_test_lowlevel_ccm_encrypt_tag(const uint8_t *expected_tag, size_t tag_len)
+{
+    /* AES-128 CCM inputs from TF-PSA-Crypto's AEAD tests. */
+    static const uint8_t key_bytes[] = {
+        0x41, 0x89, 0x35, 0x1b, 0x5c, 0xae, 0xa3, 0x75,
+        0xa0, 0x29, 0x9e, 0x81, 0xc6, 0x21, 0xbf, 0x43,
+    };
+    static const uint8_t nonce_bytes[] = {
+        0x48, 0xc0, 0x90, 0x69, 0x30, 0x56, 0x1e, 0x0a,
+        0xb0, 0xef, 0x4c, 0xd9, 0x72,
+    };
+    static const uint8_t aad[] = {
+        0x40, 0xa2, 0x7c, 0x1d, 0x1e, 0x23, 0xea, 0x3d,
+        0xbe, 0x80, 0x56, 0xb2, 0x77, 0x48, 0x61, 0xa4,
+        0xa2, 0x01, 0xcc, 0xe4, 0x9f, 0x19, 0x99, 0x7d,
+        0x19, 0x20, 0x6d, 0x8c, 0x8a, 0x34, 0x39, 0x51,
+    };
+    static const uint8_t plaintext[] = {
+        0x45, 0x35, 0xd1, 0x2b, 0x43, 0x77, 0x92, 0x8a,
+        0x7c, 0x0a, 0x61, 0xc9, 0xf8, 0x25, 0xa4, 0x86,
+        0x71, 0xea, 0x05, 0x91, 0x07, 0x48, 0xc8, 0xef,
+    };
+    const uint8_t sentinel = 0xa5;
+    uint32_t key[sizeof(key_bytes) / sizeof(uint32_t)];
+    uint32_t nonce[AES_BLOCK_SIZE / sizeof(uint32_t)];
+    uint8_t ciphertext[sizeof(plaintext)];
+    uint32_t tag[CC3XX_TEST_AES_TAG_MAX_LEN / sizeof(uint32_t)];
+    cc3xx_err_t err;
+    int rc = 0;
+
+    memcpy(key, key_bytes, sizeof(key_bytes));
+    memcpy(nonce, nonce_bytes, sizeof(nonce_bytes));
+    err = cc3xx_lowlevel_aes_init(CC3XX_AES_DIRECTION_ENCRYPT, CC3XX_AES_MODE_CCM,
+                                  CC3XX_AES_KEY_ID_USER_KEY, key, CC3XX_AES_KEYSIZE_128,
+                                  nonce, sizeof(nonce_bytes));
+    cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+
+    cc3xx_lowlevel_aes_set_tag_len(tag_len);
+    cc3xx_lowlevel_aes_set_data_len(sizeof(plaintext), sizeof(aad));
+    cc3xx_lowlevel_aes_update_authed_data(aad, sizeof(aad));
+    cc3xx_lowlevel_aes_set_output_buffer(ciphertext, sizeof(ciphertext));
+    err = cc3xx_lowlevel_aes_update(plaintext, sizeof(plaintext));
+    cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+
+    memset(tag, sentinel, sizeof(tag));
+    err = cc3xx_lowlevel_aes_finish(tag, NULL);
+    cc3xx_test_assert(err == CC3XX_ERR_SUCCESS);
+    cc3xx_test_assert(memcmp(tag, expected_tag, tag_len) == 0);
+    for (size_t i = tag_len; i < sizeof(tag); i++) {
+        cc3xx_test_assert(((const uint8_t *)tag)[i] == sentinel);
+    }
+
+cleanup:
+    cc3xx_lowlevel_aes_uninit();
+    return rc;
+}
+
 int aes_test_lowlevel_ccm_large_aad(uint32_t aad_len,
                                     const uint8_t expected_tag[16])
 {

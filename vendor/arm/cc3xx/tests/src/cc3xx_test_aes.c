@@ -1515,6 +1515,31 @@ CREATE_AES_TESTSUITE(CC3XX_AES_KEYSIZE_256, CC3XX_AES_MODE_CMAC);
 #endif /* CC3XX_CONFIG_AES_CMAC_ENABLE */
 
 #ifdef CC3XX_CONFIG_AES_CCM_ENABLE
+static void aes_ccm_partial_tag_tests_run(struct test_result_t *ret)
+{
+    static const uint8_t tag_6[] = {0x3f, 0xdf, 0xfc, 0xd7, 0x29, 0xbc};
+    static const uint8_t tag_10[] = {
+        0x96, 0x13, 0x34, 0x36, 0x21, 0x32, 0x7d, 0xef, 0xd1, 0x8e,
+    };
+    static const uint8_t tag_14[] = {
+        0xc9, 0x9a, 0xf0, 0x1c, 0xdb, 0x6a, 0xa7, 0x6d, 0xf7, 0x3c, 0x86, 0x46, 0xc2, 0x7f,
+    };
+
+    TEST_ASSERT(aes_test_lowlevel_ccm_encrypt_tag(tag_6, sizeof(tag_6)) == 0,
+                "CCM encryption should write exactly the expected 6-byte tag");
+    TEST_ASSERT(aes_test_lowlevel_ccm_encrypt_tag(tag_10, sizeof(tag_10)) == 0,
+                "CCM encryption should write exactly the expected 10-byte tag");
+    TEST_ASSERT(aes_test_lowlevel_ccm_encrypt_tag(tag_14, sizeof(tag_14)) == 0,
+                "CCM encryption should write exactly the expected 14-byte tag");
+    ret->val = TEST_PASSED;
+}
+
+static struct test_t aes_ccm_partial_tag_tests = {
+    &aes_ccm_partial_tag_tests_run,
+    "CC3XX_AES_CCM_PARTIAL_TAG_TEST",
+    "CCM encryption writes exactly the requested tag bytes"
+};
+
 static void aes_ccm_large_aad_tests_run(struct test_result_t *ret)
 {
     /* AES-128, zero key and 12-byte nonce, empty plaintext, AAD filled with
@@ -1594,6 +1619,7 @@ void add_cc3xx_aes_tests_to_testsuite(struct test_suite_t *p_ts, uint32_t ts_siz
 #endif /* CC3XX_CONFIG_AES_CMAC_ENABLE */
 
 #ifdef CC3XX_CONFIG_AES_CCM_ENABLE
+    cc3xx_add_tests_to_testsuite(&aes_ccm_partial_tag_tests, 1, p_ts, ts_size);
     cc3xx_add_tests_to_testsuite(&aes_ccm_large_aad_tests, 1, p_ts, ts_size);
     cc3xx_add_tests_to_testsuite(&aes_CC3XX_AES_KEYSIZE_128CC3XX_AES_MODE_CCM_tests, 1, p_ts, ts_size);
 #ifndef CC3XX_CONFIG_HW_VERSION_CC310
