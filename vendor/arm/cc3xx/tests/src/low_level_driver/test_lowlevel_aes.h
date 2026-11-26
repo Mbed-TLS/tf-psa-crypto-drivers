@@ -19,6 +19,7 @@ int aes_test_lowlevel_encrypt_decrypt(struct aes_test_data_t *data,
                                       cc3xx_aes_keysize_t key_size);
 
 #ifdef CC3XX_CONFIG_AES_CCM_ENABLE
+int aes_test_lowlevel_ccm_encrypt_tag(const uint8_t *expected_tag, size_t tag_len);
 int aes_test_lowlevel_ccm_large_aad(uint32_t aad_len,
                                     const uint8_t expected_tag[16]);
 #endif /* CC3XX_CONFIG_AES_CCM_ENABLE */
