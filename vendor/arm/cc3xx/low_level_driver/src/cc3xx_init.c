@@ -243,6 +243,16 @@ cc3xx_err_t cc3xx_lowlevel_init(void)
     cc3xx_lcs_t lcs;
 #endif /* CC3XX_CONFIG_LCS_LOG_ENABLE */
 
+    /* APB writes are gated until the NVM_IS_IDLE bit is set in the HOST_CC_IS_IDLE
+     * register, even when NVM is not directly managed by CryptoCell. In that scenario
+     * ao_cc_lcs_is_valid is tied to 1'b1 and the other condition is reading of the
+     * HW keys which, in case they're not managed by CryptoCell, it will assert complete
+     * as well directly.
+     */
+    while (!(P_CC3XX->host_rgf.host_cc_is_idle & (0b1U << 5))) {
+        /* Wait until NVM_IS_IDLE bit is set */
+    }
+
     /* If on a debug build, check that the CC3XX has all the features that have
      * been chosen by config */
     check_features();
